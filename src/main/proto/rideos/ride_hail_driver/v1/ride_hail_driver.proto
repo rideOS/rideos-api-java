@@ -1,0 +1,461 @@
+/***********************************************************************************************************************
+ *
+ * Copyright 2018-2019 rideOS, Inc.
+ * rideOS confidential materials
+ *
+***********************************************************************************************************************/
+
+syntax = "proto3";
+
+package rideos.ride_hail_driver.v1;
+option java_package = "ai.rideos.api.ride_hail_driver.v1";
+option objc_class_prefix = "RideHailDriver";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+import "google/api/gapi_annotations.proto";
+import "grpc/gateway/protoc-gen-swagger/options/swagger_annotations.proto";
+
+import "rideos/geo/v1/geo.proto";
+import "rideos/commons/ride_hail_commons.proto";
+import "rideos/route/v1/route.proto";
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+    info: {
+        title: "RideHail Driver API"
+        version: "1.0"
+    }
+    responses: {
+        key: "400"
+        value: {
+            description: "The request was invalid.";
+        }
+    }
+    responses: {
+        key: "401"
+        value: {
+            description: "The request was not correctly authorized. Please ensure you passed in the correct API Key.";
+        }
+    }
+    responses: {
+        key: "403"
+        value: {
+            description: "Returned when the user does not have permission to access the resource.";
+        }
+    }
+    responses: {
+        key: "429"
+        value: {
+            description: "The rate limit was exceeded, please try again.";
+        }
+    }
+};
+
+message CreateVehicleRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id", "fleetId", "definition"]
+        }
+    };
+
+    // Client-provided identifier for the vehicle. This value needs to be unique per partner and cannot be reused.
+    string id = 1;
+    // The identifier of the fleet the vehicle will belong to. The fleet must have been created beforehand.
+    string fleet_id = 2;
+    // Vehicle properties relevant for trip optimization.
+    ride_hail_commons.VehicleDefinition definition = 3;
+    // Information about the vehicle that is not used for optimization.
+    ride_hail_commons.VehicleInfo info = 4;
+}
+
+message CreateVehicleResponse {
+}
+
+message GetVehicleInfoRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id"]
+        }
+    };
+
+    // The identifier of the vehicle to retrieve information for.
+    string id = 1;
+}
+
+message GetVehicleInfoResponse {
+    // Deprecated: Old-style vehicle information.
+    ride_hail_commons.DeprecatedVehicleInfo vehicle_info = 1 [deprecated = true];
+    // Information about the vehicle that are not used for optimization.
+    ride_hail_commons.VehicleInfo info = 2;
+}
+
+message GetVehicleStateRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id"]
+        }
+    };
+
+    // The partner-provided identifier of the vehicle to retrieve the state for.
+    string id = 1;
+}
+
+message GetVehicleStateResponse {
+    // The current state of the vehicle.
+    ride_hail_commons.VehicleState state = 1;
+}
+
+message UpdateVehicleStateRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id"]
+        }
+    };
+
+    // The identifier of the vehicle to update the state for.
+    string id = 1;
+    oneof update_vehicle_state {
+        // Mark the vehicle as available to be assigned new trips.
+        SetToReady set_to_ready = 2;
+        // Mark the vehicle as unavailable to be assigned new trips.
+        SetToNotReady set_to_not_ready = 3;
+        // Update one or more of the vehicle's route legs within its current plan.
+        OverrideRouteLegs override_route_legs = 4;
+        // Update the vehicle's current position.
+        UpdatePosition update_position = 5;
+    }
+
+    message SetToReady {
+    }
+
+    message SetToNotReady {
+    }
+
+    message OverrideRouteLegs {
+        // Provide a new route until the `location` of a step with the given identifier.
+        map<string, ride_hail_commons.VehicleState.Step.RouteLeg> step_id_to_route_leg = 1;
+    }
+
+    message UpdatePosition {
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+            json_schema: {
+                required: ["updatedPosition"]
+            }
+        };
+
+        // Current position of the vehicle
+        geo.v1.Position updated_position = 1;
+        // Current heading of the vehicle
+        google.protobuf.FloatValue updated_heading = 2;
+    }
+}
+
+message UpdateVehicleStateResponse {
+}
+
+message RemoveVehicleRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id"]
+        }
+    };
+
+    // Identifier of the vehicle to remove.
+    string id = 1;
+}
+
+message RemoveVehicleResponse {
+}
+
+message CompleteStepRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["vehicleId", "tripId", "stepId", "completionTime"]
+        }
+    };
+
+    // Identifier of the vehicle completing the trip step.
+    string vehicle_id = 1;
+    // Identifier of the trip the step belongs to.
+    string trip_id = 2;
+    // Identifier of the step to complete.
+    string step_id = 3;
+    // Completion timestamp.
+    google.protobuf.Timestamp completion_time = 4;
+}
+
+message CompleteStepResponse {
+}
+
+message CancelTripRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id"]
+        }
+    };
+
+    // Identifier of the trip to cancel. The trip will be reassigned to a different vehicle.
+    string id = 1;
+    // Optional description outlinining the reason for canceling the trip.
+    string description = 2;
+}
+
+message CancelTripResponse {
+}
+
+message GetTripInfoRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id"]
+        } };
+
+    // Identifier of the trip to get information for.
+    string id = 1;
+}
+
+message GetTripInfoResponse {
+    // Information about the specified trip, such as rider contact information and additional properties.
+    ride_hail_commons.TripInfo info = 1;
+}
+
+//////////// DEPRECATED REQUEST/RESPONSE MESSAGES BELOW ////////////
+
+message JoinFleetRequest {
+    string vehicle_id = 1;
+
+    string fleet_id = 2;
+
+    // Whether or not the vehicle is ready for task assignments.
+    // See https://github.com/rideOS/examples/blob/master/grpc/docs/dispatch/v2/data_model_guide.md#ready-for-dispatch
+    // for details
+    bool ready_for_dispatch = 3;
+
+    SetReadinessRequest.NotReadyForDispatchTaskAction not_ready_action = 4;
+}
+
+message JoinFleetResponse {
+}
+
+message SetReadinessRequest {
+    enum NotReadyForDispatchTaskAction {
+        DEFAULT = 0;
+
+        // Cancel all assigned tasks
+        CANCEL_ALL = 1;
+
+        // Unassign any tasks that can be unassigned. Cancel all other tasks.
+        UNASSIGN_OR_CANCEL_ALL = 2;
+
+        // Unassign any tasks that can be unassigned. Keep all other tasks.
+        UNASSIGN_OR_KEEP = 3;
+    }
+
+    // The unique vehicle ID.
+    string vehicle_id = 1;
+
+    // Whether or not the vehicle is ready for task assignments.
+    // See https://github.com/rideOS/examples/blob/master/grpc/docs/dispatch/v2/data_model_guide.md#ready-for-dispatch
+    // for details
+    bool ready_for_dispatch = 2;
+
+    // Optional: This field indicates what to do with all assigned tasks when the vehicle transitions to not ready for
+    // dispatch. This action is applied only if "ready_for_dispatch" is false.
+    NotReadyForDispatchTaskAction not_ready_action = 3;
+}
+
+message SetReadinessResponse {
+}
+
+message SyncVehicleStateRequest {
+    string vehicle_id = 1;
+    geo.v1.PositionAndHeading vehicle_pose = 2;
+
+    // Response will report the status of all of these task IDs
+    repeated string existing_task_id = 3;
+
+    // Optional. Set to true to request that the route be recalculated immediately.
+    bool refresh_route = 4;
+}
+
+message SyncVehicleStateResponse {
+    ride_hail_commons.DeprecatedPlan plan = 1;
+    route.v1.RouteResponse route_to_first_waypoint = 2 [deprecated = true];
+    map<string, ride_hail_commons.TaskStage> existing_task_stage = 3 [deprecated = true];
+    ride_hail_commons.VehicleRouteLeg route_leg_to_first_waypoint = 4;
+    map<string, ride_hail_commons.DeprecatedTrip.TripStage> existing_trip_stage = 5;
+}
+
+message SetVehicleRouteRequest {
+    string vehicle_id = 1;
+    string step_id = 2;
+    route.v1.RouteResponse route_response = 3 [deprecated = true];
+}
+
+message SetVehicleRouteResponse {
+}
+
+message SetVehicleRouteLegsRequest {
+    string vehicle_id = 1;
+    map<string, ride_hail_commons.VehicleRouteLeg> vehicle_route_legs = 2;
+}
+
+message SetVehicleRouteLegsResponse {
+
+}
+
+message SetVehicleInfoRequest {
+    ride_hail_commons.DeprecatedVehicleInfo vehicle_info = 1;
+}
+
+message SetVehicleInfoResponse {
+}
+
+service RideHailDriverService {
+
+    // Create a vehicle
+    //
+    // Adds a new vehicle to an existing fleet using a provided identifier and any additional properties.
+    // Vehicle properties are immutable and vehicle identifiers cannot be reused after a vehicle has been removed.
+    rpc CreateVehicle (CreateVehicleRequest) returns (CreateVehicleResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/driver/v1/CreateVehicle"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1)"
+        };
+    }
+
+    // Retrieve a vehicle's information
+    //
+    // Retrieves information about the vehicle and its driver, such as contact information and additional properties.
+    rpc GetVehicleInfo (GetVehicleInfoRequest) returns (GetVehicleInfoResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/driver/v1/GetVehicleInfo"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1)"
+        };
+    }
+
+    // Retrieve a vehicle's state
+    //
+    // Retrieves the vehicle current state. The response will list all the trips and trip's legs associated with the
+    // vehicle, the current position and heading, and whether or not the vehicle can be assigned new trips.
+    rpc GetVehicleState (GetVehicleStateRequest) returns (GetVehicleStateResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/driver/v1/GetVehicleState"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1)"
+        };
+    }
+
+    // Update a vehicle's state
+    //
+    // Updates the current state of the vehicle. This update can encapsulate one of the following:
+    //
+    // 1) Set the vehicle to a ready state (meaning new trips can be assigned to it)
+    // 2) Set the vehicle to a not ready state (meaning new trips will not be assigned to it)
+    // 3) Set vehicle route legs in the vehicle plan
+    // 4) Update the vehicle's position and optionally its heading
+    rpc UpdateVehicleState (UpdateVehicleStateRequest) returns (UpdateVehicleStateResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/driver/v1/UpdateVehicleState"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1)"
+        };
+    }
+
+    // Remove a vehicle
+    //
+    // Removes a vehicle with the provided identifier. A vehicle cannot be removed if it is assigned a trip. Note: A
+    // removal is permanent. Once a vehicle has been removed, it cannot be added back via the CreateVehicle call, and
+    // its identifier cannot be used for any new vehicles that come online.
+    rpc RemoveVehicle (RemoveVehicleRequest) returns (RemoveVehicleResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/driver/v1/RemoveVehicle"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1)"
+        };
+    }
+
+    // Complete a trip step
+    //
+    // Should be called whenever a vehicle has completed a step of its plan.
+    // For example, this needs to called whenever a vehicle picked up a passenger, or dropped a passenger off.
+    rpc CompleteStep (CompleteStepRequest) returns (CompleteStepResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/driver/v1/CompleteStep"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1)"
+        };
+    }
+
+    // Cancel a trip
+    //
+    // Cancels a trip with the provided trip identifier.
+    rpc CancelTrip (CancelTripRequest) returns (CancelTripResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/driver/v1/CancelTrip"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1)"
+        };
+    }
+
+    // Retrieve a trip's information
+    //
+    // Retrieves all the information for the provided trip identifier (e.g. rider contact information, pickup-dropoff
+    // locations).
+    rpc GetTripInfo (GetTripInfoRequest) returns (GetTripInfoResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/driver/v1/GetTripInfo"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1)"
+        };
+    }
+
+    //////////// DEPRECATED METHODS BELOW ////////////
+
+    // Have the Vehicle associate with a fleet
+    rpc JoinFleet (JoinFleetRequest) returns (JoinFleetResponse) {
+        option deprecated = true;
+    }
+
+    // Have the Vehicle associate with a fleet
+    rpc SetReadiness (SetReadinessRequest) returns (SetReadinessResponse) {
+        option deprecated = true;
+    }
+
+    // Sync the VehicleState
+    rpc SyncVehicleState (SyncVehicleStateRequest) returns (SyncVehicleStateResponse) {
+        option deprecated = true;
+    }
+
+    // Set the Vehicle Route
+    rpc SetVehicleRoute (SetVehicleRouteRequest) returns (SetVehicleRouteResponse) {
+        option deprecated = true;
+    };
+
+    // Set the Vehicle Route Legs
+    rpc SetVehicleRouteLegs (SetVehicleRouteLegsRequest) returns (SetVehicleRouteLegsResponse) {
+        option deprecated = true;
+    }
+
+    rpc SetVehicleInfo (SetVehicleInfoRequest) returns (SetVehicleInfoResponse) {
+        option deprecated = true;
+    };
+}

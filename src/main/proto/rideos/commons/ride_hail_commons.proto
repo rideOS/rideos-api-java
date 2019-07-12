@@ -1,0 +1,667 @@
+/***********************************************************************************************************************
+ *
+ * Copyright 2018-2019 rideOS, Inc.
+ * rideOS confidential materials
+ *
+***********************************************************************************************************************/
+
+syntax = "proto3";
+
+package rideos.ride_hail_commons;
+option java_package = "ai.rideos.api.commons.ride_hail_commons";
+option objc_class_prefix = "RideHailCommons";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+import "grpc/gateway/protoc-gen-swagger/options/swagger_annotations.proto";
+
+import "rideos/geo/v1/geo.proto";
+import "rideos/timestamp/v1/timestamp.proto";
+
+// Common Structures
+
+//////////// COMMON OBJECTS ////////////
+
+// Contact information
+message ContactInfo {
+    // Name of the person to contact
+    string name = 1;
+    // Phone number with international prefix e.g. `+1 555 555 555`.
+    string phone_number = 2;
+    // URL to an external application for contact.
+    string contact_url = 3;
+}
+
+// Location where the vehicle will stop to pickup or drop-off a rider
+message Stop {
+    oneof type {
+        // Client-provided identifier of a fixed stop position.
+        string predefined_stop_id = 1;
+        // Position of the rider or target as WGS84 coordinate.
+        geo.v1.Position position = 2;
+    }
+}
+
+//////////// FLEET ////////////
+
+// Grouping of vehicles for transporting riders
+message Fleet {
+    // Client-provided identifier of a fleet, must be unique and can not be reused after the fleet has been removed.
+    string id = 1;
+    // Information about the fleet such as display name and additional properties.
+    FleetInfo info = 2;
+}
+
+// Information about the fleet
+message FleetInfo {
+    // Human-readable name for display, e.g. when selecting a fleet from a list.
+    string display_name = 1;
+    // Additional properties for storing partner-specific information about the fleet, as string key value pairs.
+    map<string, string> properties = 2;
+}
+
+//////////// VEHICLE ////////////
+
+// Vehicle that is part of a fleet
+message Vehicle {
+    // Client-provided identifier of a vehicle that needs to be unique across all fleets.
+    string id = 1;
+    // Client-provided identifier of the fleet the vehicle is assigned to. The fleet needs to exist before the vehicle.
+    string fleet_id = 2;
+    // Immutable definition of the vehicle, if this information changes a new vehicle needs to be created.
+    VehicleDefinition definition = 3;
+    // Information about the vehicle and driver, such as contact information and additional properties.
+    VehicleInfo info = 4;
+    // Current state of the vehicle, e.g. its position, last active time and plan.
+    VehicleState state = 5;
+}
+
+// Current state of the vehicle
+message VehicleState {
+    // Last known position of the vehicle as WGS84 coordinate.
+    geo.v1.Position position = 1;
+    // Last known heading of the vehicle in degrees 0...360 from true-north.
+    google.protobuf.FloatValue heading = 2 [
+      (grpc.gateway.protoc_gen_swagger.options.openapiv2_field).minimum = 0.0,
+      (grpc.gateway.protoc_gen_swagger.options.openapiv2_field).maximum = 360.0
+    ];
+    // Last time the vehicle updated its state.
+    google.protobuf.Timestamp last_active_time = 3;
+    // The full plan assigned to the vehicle, e.g. steps of all trips it was assigned to.
+    // The assigned trips and order of steps might change, due to optimizations of the route.
+    Plan plan = 4;
+    // Indicates that the vehicle is ready to receive new trip assignments.
+    bool readiness = 5;
+
+    // Plan for completing all assigned trips
+    message Plan {
+        // Series of steps to complete all assigned trips, e.g. picking up several passengers and dropping them off.
+        repeated Step step = 1;
+    }
+
+    // Smallest part of a trip
+    message Step {
+        // Automatically generated identifier of the step, unique per trip.
+        string id = 1;
+        // Client-provided identifier for the trip.
+        string trip_id = 2;
+        // Location at which the step will be completed.
+        Stop location = 3;
+
+        oneof vehicle_action {
+            // State information for driving to the step `location`, e.g. the route information.
+            DriveToLocation drive_to_location = 5;
+            // State information for picking up the passenger at `location`.
+            PickupRider pickup_rider = 6;
+            // State information for dropping off the passenger at `location`.
+            DropoffRider dropoff_rider = 7;
+        }
+
+        // Route information a drive between two stops
+        message RouteLeg {
+            // Google polyline encoded geometry of the path the vehicle will take between two stops.
+            // The polyline encoding uses a precision of 5 decimals.
+            string polyline = 1;
+            // Travel time of the route leg in seconds.
+            double travel_time_in_seconds = 2;
+            // Distance of the route leg in meters.
+            double distance_in_meters = 3;
+        }
+
+        // Vehicle is driving to a location 
+        message DriveToLocation {
+            // Route information driving from the current stop to the next stop
+            RouteLeg route = 1;
+        }
+
+        // Vehicle is waiting to pick up the rider
+        message PickupRider {
+        }
+
+        // Vehicle is waiting for the rider to leave
+        message DropoffRider {
+        }
+    }
+}
+
+// Immutable properties of a vehicle
+message VehicleDefinition {
+    // Capacity of the vehicle in terms of seats available for riders.
+    uint32 rider_capacity = 1;
+}
+
+// Information about the vehicle
+message VehicleInfo {
+    // Information about the driver, such as contact information.
+    DriverInfo driver_info = 1;
+    // Additional properties for storing partner-specific information about the vehicle, as string key value pairs.
+    map<string, string> properties = 2;
+}
+
+// Information about the driver, if applicable
+message DriverInfo {
+    // Information for contacting the driver.
+    ContactInfo contact_info = 1;
+}
+
+//////////// TRIP ////////////
+
+// A trip represents transporting one or more rider from a pickup to a drop-off location
+message Trip {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id", "fleed_id", "definition", "info", "state"]
+        }
+    };
+
+    // Client-provided identifier of the trip, needs to be unqiue across the fleet and can not be reused.
+    string id = 1;
+    // Identifier of the fleet whose vehicles will be used to execute this trip.
+    string fleet_id = 2;
+    // Immutable definition of a trip like the pickup and drop-off locations, to change it a new trip needs to be requested.
+    TripDefinition definition = 3;
+    // Information about the trip, like contact information of the rider and additional properties.
+    TripInfo info = 4;
+    // State of the trip, containing information specific to each state, for example the assigned vehicle or cancelation reason.
+    TripState state = 5;
+}
+
+// Immutable properties of a trip
+message TripDefinition {
+    oneof trip_type {
+        // Transport a rider from a pickup location to a drop-off location.
+        PickupDropoff pickup_dropoff = 1;
+    }
+}
+
+// Trip that transports one or more rider from a pickup to a drop-off
+message PickupDropoff {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["pickup", "dropoff", "riderCount"]
+        }
+    };
+
+    // Pickup location of the trip.
+    Stop pickup = 1;
+    // Dropoff location of the trip.
+    Stop dropoff = 2;
+    // Number of riders being transported.
+    uint32 rider_count = 3;
+}
+
+// Information about the trip
+message TripInfo {
+    // Information about the rider such as contact info.
+    RiderInfo rider_info = 1;
+    // Additional properties for storing partner-specific information about the trip, as string key value pairs.
+    map<string, string> properties = 2;
+}
+
+// Information about the rider
+message RiderInfo {
+    // Contact information for the rider that requested the trip.
+    ContactInfo contact_info = 1;
+}
+
+// State of a trip
+//
+// State changes will be triggered by actions of the vehicle, rider or the dispatch optimization.
+message TripState {
+    oneof trip_state {
+        // State information for an unassigned trip
+        WaitingForAssignment waiting_for_assignment = 1;
+        // State information for a trip were the vehicle is driving to the pickup location
+        DrivingToPickup driving_to_pickup = 2;
+        // State information for a trip were the vehicle waiting on the rider at the pickup location
+        WaitingForPickup waiting_for_pickup = 3;
+        // State information for a trip were the vehicle is driving to the drop-off location
+        DrivingToDropoff driving_to_dropoff = 4;
+        // State information for a trip that has been completed successfully
+        Completed completed = 5;
+        // State information for a trip that has been canceled
+        Canceled canceled = 6;
+        // State information for a trip that has been replaced by another trip (e.g. due to changes to the trip definition)
+        Replaced replaced = 7;
+    }
+
+    // Waiting to be assigned to a vehicle in the fleet.
+    message WaitingForAssignment {
+
+    }
+
+    // Vehicle is on its way to pickup the rider.
+    // There might be intermediate steps, e.g. other riders getting picked up or dropped off before this trip will be started.
+    message DrivingToPickup {
+        // Information about the vehicle that was assigned to transport the rider,
+        // like driver contact info and steps preceding the pickup of the current rider.
+        AssignedVehicle assigned_vehicle = 1;
+    }
+
+    // Vehicle is waiting for the rider at the pickup location.
+    message WaitingForPickup {
+        // Information about the vehicle that was assigned to transport the rider,
+        // like driver contact info and steps preceding the pickup of the current rider.
+        AssignedVehicle assigned_vehicle = 1;
+    }
+
+    // Vehicle is driving to the drop-off location.
+    // There might be intermediate steps, e.g. other riders getting picked up or dropped off before this trip will be finished.
+    message DrivingToDropoff {
+        // Information about the vehicle that was assigned to transport the rider,
+        // like driver contact info and steps preceding the pickup of the current rider.
+        AssignedVehicle assigned_vehicle = 1;
+    }
+
+    // Trip was completed successfully.
+    message Completed {
+        // Client-provided identifier of the vehicle that completed the trip.
+        string vehicle_id = 1;
+    }
+
+    // Trip was canceled by either the rider or driver.
+    message Canceled {
+        // Reason of the cancellation, if available. 
+        string description = 1;
+    }
+
+    // Trip was replaced by a different trip.
+    // This state occurs when the definition needed to be updated,
+    // e.g. the pick-up or drop-off location changed,
+    // or more riders needed to be picked up.
+    message Replaced {
+        // Client-provided identifier of the trip that replaced this trip.
+        string replacement_trip_id = 1;
+    }
+}
+
+// Vehicle that was assigned to a trip
+message AssignedVehicle {
+    // Client-provided identifier of the vehicle that was assigned.
+    string id = 1;
+
+    // Information about the vehicle and its driver, such as contact information and additional properties.
+    VehicleInfo info = 2;
+
+    // Current plan of the vehicle until the assigned trip ends.
+    // 
+    // This includes the steps before the current trip will be started,
+    // and all intermediate steps until the trip will be completed.
+    VehicleState.Plan plan_through_trip_end = 3;
+}
+
+//////////// DEPRECATED! ////////////
+
+message PredefinedStop {
+    option deprecated = true;
+
+    string id = 1;
+    geo.v1.Position position = 2;
+}
+
+message AvailableVehicle {
+    option deprecated = true;
+
+    string fleet_control_vehicle_id = 1;
+    string vehicle_id = 2;
+}
+
+message CancelReason {
+    option deprecated = true;
+
+    enum Source {
+        UNKNOWN = 0;
+        REQUESTOR = 1;
+        VEHICLE = 2;
+        INTERNAL = 3;
+    }
+
+    Source source = 1;
+    string description = 2;
+}
+
+message VehiclePreview {
+    option deprecated = true;
+
+    geo.v1.PositionAndHeading position_and_heading = 1;
+
+    // ID of the preview vehicle.
+    //
+    // Use this only for animation purposes (to animate a vehicle moving over time). Does not necessarily correspond
+    // to the vehicle ID of a real vehicle.
+    string preview_id = 2;
+}
+
+message VehicleRouteLeg {
+    option deprecated = true;
+
+    string polyline = 1;
+    google.protobuf.Duration travel_time = 2;
+    double distance_in_meters = 3;
+}
+
+enum NotReadyForDispatchTaskAction {
+    option deprecated = true;
+
+    DEFAULT = 0;
+
+    // Cancel all assigned tasks
+    CANCEL_ALL = 1;
+
+    // Unassign any tasks that can be unassigned. Cancel all other tasks.
+    UNASSIGN_OR_CANCEL_ALL = 2;
+
+    // Unassign any tasks that can be unassigned. Keep all other tasks.
+    UNASSIGN_OR_KEEP = 3;
+}
+
+message VehicleFilter {
+    option deprecated = true;
+
+    oneof type {
+        // Force the task to be dispatched to the vehicle with this vehicle id
+        string vehicle_id = 1;
+    }
+}
+
+message OptimizationParameters {
+    option deprecated = true;
+
+    // How long to wait for a dispatch before timing out this task. If left unset, a default value will be selected.
+    // Set to zero or a negative duration to disable the timeout.
+    google.protobuf.Duration dispatch_timeout = 1;
+
+    VehicleFilter vehicle_filter = 2;
+}
+
+message PassengerTaskRequestInfo {
+    option deprecated = true;
+
+    // This task will only be assigned to vehicles with a matching fleet_id. If the fleet_id is not specified, the task
+    // will only be assigned to vehicles with a blank fleet_id.
+    string fleet_id = 1;
+
+    TaskLocation pickup_location = 2 [deprecated = true];
+    TaskLocation dropoff_location = 3 [deprecated = true];
+
+    // Required. Must be at least 1.
+    uint32 num_passengers = 4;
+
+    OptimizationParameters optimization_parameters = 5;
+
+    StopLocation pickup = 6;
+    StopLocation dropoff = 7;
+}
+
+message Pudol {
+    option deprecated = true;
+
+    string pudol_id = 1;
+    geo.v1.Position position = 2;
+}
+
+message StopLocation {
+    option deprecated = true;
+
+    geo.v1.Position position = 1;
+    string external_stop_id = 2;
+}
+
+message DeprecatedVehicle {
+    option deprecated = true;
+
+    string vehicle_id = 1;
+    string fleet_id = 2;
+    repeated string current_trip_id = 3;
+    geo.v1.PositionAndHeading current_position_and_heading = 4;
+    int64 last_active_time_epoch_ms = 5;
+    DeprecatedPlan vehicle_plan = 6;
+    DeprecatedVehicleInfo vehicle_info = 8;
+}
+
+message Waypoint {
+    option deprecated = true;
+
+    // ID of the corresponding Task
+    string task_id = 1;
+
+    // ID of the original Step from which the Waypoint was derived
+    string step_id = 2;
+
+    // The details of the step to complete
+    Step step = 3;
+}
+
+message Step {
+    option deprecated = true;
+
+    // Step IDs are globally unique
+    string id = 1;
+
+    TaskLocation location = 2 [deprecated = true];
+
+    // The resource to be picked up/dropped off
+    Resource resource = 3;
+
+    // The action to take at this step (pickup, dropoff, etc.)
+    Action action = 4;
+
+    StopLocation trip_location = 5;
+    enum Action {
+        UNKNOWN = 0;
+
+        // Drive to the pickup location.
+        DRIVE_TO_PICKUP = 1;
+
+        // Load the resource (e.g. passenger) into the vehicle.
+        LOAD_RESOURCE = 2;
+
+        // Drive to the dropoff location.
+        DRIVE_TO_DROPOFF = 3;
+
+        RELOCATE_DRIVE = 4;
+    }
+}
+
+message Resource {
+    option deprecated = true;
+
+    string resource_id = 1;
+
+    message Passengers {
+        int32 num_passengers = 1;
+        ContactInfo requestor_contact_info = 2;
+    }
+
+    oneof resource_type {
+        Passengers passengers = 2;
+    }
+}
+
+message FleetMetadata {
+    option deprecated = true;
+
+    string fleet_id = 1;
+    map<string, string> properties = 2;
+}
+
+
+message DeprecatedPlan {
+    option deprecated = true;
+    repeated Waypoint waypoints = 1;
+}
+
+message DeprecatedVehicleInfo {
+    option deprecated = true;
+
+    string vehicle_id = 1;
+    string make = 2 [deprecated = true];
+    string model = 3 [deprecated = true];
+    VehicleColor color = 4 [deprecated = true];
+    string license_plate = 5;
+    int32 passenger_capacity = 6;
+    // May be empty if the vehicle has no driver contact info.
+    ContactInfo driver_contact_info = 7;
+
+    enum VehicleColor {
+        option deprecated = true;
+        // Color choices from the Texas DMV's website, see
+        // https://www.txdmv.gov/component/docman/doc_download/669-vehicle-color-chart?Itemid=232
+        UNKNOWN = 0;
+        BLUE = 1;
+        PURPLE = 2;
+        PINK = 3;
+        RED = 4;
+        MAROON = 5;
+        ORANGE = 6;
+        TAN = 7;
+        GOLD = 8;
+        YELLOW = 9;
+        GREEN = 10;
+        BROWN = 11;
+        BEIGE = 12;
+        SILVER = 13;
+        GRAY = 14;
+        BLACK = 15;
+        WHITE = 16;
+    }
+}
+
+message DeprecatedTrip {
+    option deprecated = true;
+    string trip_id = 1;
+    string fleet_id = 2;
+    TripStage stage = 3;
+    StopLocation pickup_location = 4;
+    StopLocation dropoff_location = 5;
+    // Empty if not yet assigned
+    DeprecatedVehicleInfo vehicle_info = 6;
+    PassengerInfo passenger_info = 7;
+    // Empty if the task is not cancelled
+    CancelReason cancel_reason = 8;
+    string replacement_trip_id = 9;
+
+    enum TripStage {
+        UNKNOWN = 0;
+        WAITING_FOR_ASSIGNMENT = 1;
+        DRIVING_TO_PICKUP = 2;
+        WAITING_FOR_PICKUP = 3;
+        DRIVING_TO_DROPOFF = 4;
+        COMPLETED = 5;
+        CANCELLED = 6;
+        REPLACED = 7;
+    }
+}
+
+message PassengerInfo {
+    option deprecated = true;
+    string passenger_id = 1;
+    ContactInfo passenger_contact_info = 2;
+}
+
+
+message PassengerTripInfo {
+    option deprecated = true;
+    string task_id = 1;
+    TaskStage stage = 2;
+    string assigned_vehicle_id = 3; // empty if not yet assigned
+
+    TaskLocation pickup_location = 4;
+    TaskLocation dropoff_location = 5;
+
+    // Empty if task not yet assigned. May be empty if the vehicle has no driver contact info.
+    ContactInfo driver_contact_info = 6;
+    // Empty if task not yet assigned. May be empty if Dispatch does not have any info for the vehicle.
+    DeprecatedVehicleInfo vehicle_info = 7;
+
+    string fleet_id = 8;
+
+    // Empty if the task is not cancelled
+    CancelReason cancel_reason = 9;
+    string replacement_task_id = 10;
+}
+
+message TaskLocation {
+    option deprecated = true;
+    geo.v1.Position position = 1;
+    string external_stop_id = 2;
+}
+
+enum TaskStage {
+    option deprecated = true;
+    UNKNOWN = 0;
+    WAITING_FOR_ASSIGNMENT = 1;
+    DRIVING_TO_PICKUP = 2;
+    WAITING_FOR_PICKUP = 3;
+    DRIVING_TO_DROPOFF = 4;
+    COMPLETED = 5;
+    CANCELLED = 6;
+    REPLACED = 7;
+}
+
+message ActiveTripInfo {
+    option deprecated = true;
+    PassengerTripInfo passenger_trip_info = 1;
+    string passenger_id = 2;
+    ContactInfo passenger_contact_info = 3;
+}
+
+message DeprecatedVehicleState {
+    option deprecated = true;
+    string vehicle_id = 1;
+    bool ready_for_dispatch = 2;
+    DeprecatedPlan vehicle_plan = 3;
+    repeated string assigned_task_id = 4;
+    int64 last_active_time_epoch_ms = 5;
+    string fleet_id = 6;
+}
+
+message VehicleUIState {
+    option deprecated = true;
+    DeprecatedVehicleState state = 1;
+    VehicleExtendedPosition position = 2;
+
+    // The IDs of the resources (e.g. passengers) currently carried by the vehicle.
+    repeated string currently_carried_resource_id = 3;
+
+    DeprecatedVehicleInfo info = 4;
+}
+
+message VehicleExtendedPosition {
+    option deprecated = true;
+    // The customer-specified ID of the vehicle
+    string vehicle_id = 1;
+
+    // Time at which the state is valid
+    timestamp.v1.Timestamp time_of_validity = 2;
+
+    // Position of the vehicle
+    geo.v1.Position position = 3;
+
+    // Formerly heading_deg_cw_from_true_north
+    reserved 4;
+
+    geo.v1.Heading heading = 5;
+}

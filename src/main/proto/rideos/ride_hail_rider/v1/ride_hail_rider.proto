@@ -1,0 +1,581 @@
+/***********************************************************************************************************************
+ *
+ * Copyright 2018-2019 rideOS, Inc.
+ * rideOS confidential materials
+ *
+***********************************************************************************************************************/
+
+syntax = "proto3";
+
+package rideos.ride_hail_rider.v1;
+option java_package = "ai.rideos.api.ride_hail_rider.v1";
+option objc_class_prefix = "RideHailRider";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+
+import "google/api/gapi_annotations.proto";
+import "grpc/gateway/protoc-gen-swagger/options/swagger_annotations.proto";
+
+import "rideos/commons/ride_hail_commons.proto";
+import "rideos/geo/v1/geo.proto";
+import "rideos/route/v1/route.proto";
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+    info: {
+        title: "RideHail Rider API"
+        version: "1.0"
+    }
+    responses: {
+        key: "400"
+        value: {
+            description: "The request was invalid.";
+        }
+    }
+    responses: {
+        key: "401"
+        value: {
+            description: "The request was not correctly authorized. Please ensure you passed the correct API Key.";
+        }
+    }
+    responses: {
+        key: "403"
+        value: {
+            description: "Returned when the user does not have permission to access the resource.";
+        }
+    }
+    responses: {
+        key: "429"
+        value: {
+            description: "The rate limit was exceeded, please try again.";
+        }
+    }
+};
+
+message RequestTripRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id", "riderId", "fleetId", "definition"]
+        }
+    };
+
+    // Client-provided identifier for the trip. Needs to be unique per partner and can not be reused.
+    string id = 1;
+    // Client-provided identifier for the rider. Needs to be unique per partner and can not be reused.
+    string rider_id = 2;
+    // The identifier of the fleet that will serve the trip.
+    string fleet_id = 3;
+
+    // Immutable definition of a trip like the pickup and drop-off locations, to change it a new trip needs to be requested.
+    ride_hail_commons.TripDefinition definition = 4;
+    // Meta-information about the trip, like contact information of the rider and additional properties.
+    ride_hail_commons.TripInfo info = 5;
+    // Options to configure the trip assigment.
+    DispatchParameters dispatch_parameters = 6;
+}
+
+message DispatchParameters {
+    // Maximum time to wait for the trip to be assigned. If it is not assigned by the end of this timeout, the trip will be marked as cancelled.
+    google.protobuf.UInt32Value timeout_in_ms = 1;
+    // Options to filter which vehicles can be assigned to the trip.
+    repeated ride_hail_commons.VehicleFilter vehicle_filter = 2;
+}
+
+message RequestTripResponse {
+}
+
+message GetTripDefinitionRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id"]
+        }
+    };
+
+    // Identifier of the trip to retrieve the definition for.
+    string id = 1;
+}
+
+message GetTripDefinitionResponse {
+    // Requested trip definition.
+    ride_hail_commons.TripDefinition definition = 1;
+}
+
+message GetTripInfoRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id"]
+        }
+    };
+
+    // Identifier of the trip to retrieve the information for.
+    string id = 1;
+}
+
+message GetTripInfoResponse {
+    // Requested trip information.
+    ride_hail_commons.TripInfo info = 1;
+}
+
+message GetTripStateRequestRC {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id"]
+        }
+    };
+
+    // Identifier of the trip to retrieve the state for.
+    string id = 1;
+}
+
+message GetTripStateResponseRC {
+    // Requested trip state.
+    ride_hail_commons.TripState state = 1;
+}
+
+message CancelTripRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id"]
+        }
+    };
+
+    // Identifier of the trip to cancel.
+    string id = 1;
+    // Reason for cancelling.
+    string description = 2;
+}
+
+message CancelTripResponse {
+}
+
+message ChangeTripDefinitionRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["tripId", "replacementTripId"]
+        }
+    };
+
+    // Identifier of the trip to update.
+    string trip_id = 1;
+    // New identifier for the trip.
+    string replacement_trip_id = 2;
+    oneof change_definition {
+        // Modified pickup.
+        ChangePickup change_pickup = 3;
+        // Modified dropoff.
+        ChangeDropoff change_dropoff = 4;
+        // Modified pickup and dropoff.
+        ChangePickupAndDropoff change_pickup_and_dropoff = 5;
+    }
+
+    // Modified pickup.
+    message ChangePickup {
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+            json_schema: {
+                required: ["newPickup"]
+            }
+        };
+
+        // Modified pickup.
+        ride_hail_commons.Stop new_pickup = 1;
+    }
+
+    // Modified dropoff.
+    message ChangeDropoff {
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+            json_schema: {
+                required: ["newDropoff"]
+            }
+        };
+
+        // Modified dropoff.
+        ride_hail_commons.Stop new_dropoff = 1;
+    }
+
+    // Modified pickup and dropoff.
+    message ChangePickupAndDropoff {
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+            json_schema: {
+                required: ["newPickup", "newDropoff"]
+            }
+        };
+
+        // Modified pickup.
+        ride_hail_commons.Stop new_pickup = 1;
+        // Modified dropoff.
+        ride_hail_commons.Stop new_dropoff = 2;
+    }
+}
+
+message ChangeTripDefinitionResponse {
+}
+
+message GetActiveTripIdRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["riderId"]
+        }
+    };
+
+    // Rider identifier to retrieve the active trip for.
+    string rider_id = 1;
+}
+
+message GetActiveTripIdResponse {
+    oneof type {
+        // Requested rider has no active trip.
+        NoActiveTrip no_active_trip = 2;
+        // Requested rider has an active trip.
+        ActiveTrip active_trip = 3;
+    }
+
+    // Requested rider has no active trip.
+    message NoActiveTrip {
+    }
+
+    // Requested rider has an active trip.
+    message ActiveTrip {
+        // Active trip identifier.
+        string id = 1;
+    }
+}
+
+message GetVehiclesInVicinityRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["fleetId"]
+        }
+    };
+
+    // The fleet identifier to get vehicle for.
+    string fleet_id = 1;
+    // The location where we want to look around for vehicle.
+    geo.v1.Position query_position = 2;
+}
+
+message GetVehiclesInVicinityResponse {
+    // List of all the vehicles around the provided location suitable for use in a client application with limited privileges.
+    repeated VicinityVehicle vehicle = 1;
+}
+
+// Trimmed down information about a vehicle.
+message VicinityVehicle {
+    // The sanitized identifier of the vehicle. This is not the partner-provided identifier for privacy reasons, but a stable identifier to enable animations on the client.
+    string id = 1;
+    // The position of the vehicle.
+    geo.v1.Position position = 2;
+    // The heading of the vehicle
+    google.protobuf.FloatValue heading = 3;
+}
+
+message FindPredefinedStopRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["fleetId", "queryPosition"]
+        } };
+
+    // The fleet identifier to get predefined stop for.
+    string fleet_id = 1;
+    // The location where we want to look around for predefined stops.
+    geo.v1.Position query_position = 2;
+    // Extra-filters to apply when selecting predefined stops.
+    StopSearchParameters search_parameters = 3;
+}
+
+message FindPredefinedStopResponse {
+    // List of all the predefined stops around the provided location.
+    repeated ride_hail_commons.PredefinedStop predefined_stop = 1;
+}
+
+message StopSearchParameters {
+    // List of tags to select.
+    repeated string filter_tag = 1;
+}
+
+//////////// DEPRECATED REQUEST/RESPONSE MESSAGES BELOW ////////////
+
+message TripRequest {
+    option deprecated = true;
+
+    // Required. Note that any given passenger may only have one active PassengerTask at a time.
+    string passenger_id = 1;
+
+    ride_hail_commons.TaskLocation pickup_location = 2 [deprecated = true];
+    ride_hail_commons.TaskLocation dropoff_location = 3 [deprecated = true];
+
+    // Required. Must be at least 1.
+    int32 num_passengers = 4;
+
+    // This task will only be assigned to vehicles with a matching fleet_id. If the fleet_id is not specified, the task
+    // will only be assigned to vehicles with a blank fleet_id.
+    string fleet_id = 5;
+
+    // How long to wait for a dispatch before timing out this task. If left unset, a default value will be selected.
+    // Set to a negative duration to disable the timeout.
+    google.protobuf.Duration dispatch_timeout = 6;
+
+    // Optional: A VehicleFilter can be used to force an assignment of the passenger to a specific vehicle. If unset,
+    // no filter is applied.
+    ride_hail_commons.VehicleFilter vehicle_filter = 7;
+
+    ride_hail_commons.StopLocation pickup = 8;
+    ride_hail_commons.StopLocation dropoff = 9;
+}
+
+message TripResponse {
+    option deprecated = true;
+
+    string requested_task_id = 1;
+}
+
+message UpdateTripRequest {
+    option deprecated = true;
+
+    string task_id = 1;
+
+    // Can update pickup, dropoff, or both
+    ride_hail_commons.TaskLocation new_pickup_location = 4 [deprecated = true];
+    ride_hail_commons.TaskLocation new_dropoff_location = 5 [deprecated = true];
+
+    ride_hail_commons.StopLocation new_pickup = 2;
+    ride_hail_commons.StopLocation new_dropoff = 3;
+}
+
+message UpdateTripResponse {
+    option deprecated = true;
+
+    string new_task_id = 1;
+}
+
+message QueryTripRequest {
+    option deprecated = true;
+
+    string passenger_id = 1;
+}
+
+message GetTripStateRequest {
+    option deprecated = true;
+
+    string passenger_id = 1;
+
+    // Response will report the status of all of these task IDs
+    repeated string existing_task_id = 2;
+}
+
+message GetTripStateResponse {
+    option deprecated = true;
+
+    ride_hail_commons.PassengerTripInfo current_trip_info = 1 [deprecated = true];
+
+    geo.v1.PositionAndHeading assigned_vehicle_pose = 2;
+
+    // The partial plan and route include the waypoints that must be completed before and up to the requestor's
+    // next step
+    ride_hail_commons.DeprecatedPlan assigned_vehicle_partial_plan = 3;
+    route.v1.RouteResponse assigned_vehicle_partial_route = 4 [deprecated = true];
+
+    map<string, ride_hail_commons.PassengerTripInfo> existing_trip_state = 5 [deprecated = true];
+    repeated ride_hail_commons.VehicleRouteLeg assigned_vehicle_route_legs = 6;
+
+    ride_hail_commons.DeprecatedTrip current_trip = 7;
+    map<string, ride_hail_commons.DeprecatedTrip> existing_trip = 8;
+
+    ride_hail_commons.ContactInfo assigned_vehicle_contact_info = 9;
+}
+
+message GetPreviewVehiclesRequest {
+    option deprecated = true;
+
+    string fleet_id = 1;
+
+    // The center of the geographical area where the preview vehicles will be displayed.
+    //
+    // Typically, preview vehicles will be displayed on a map view, in which case this field should be set to the
+    // center coordinate of the map view.
+    geo.v1.Position preview_center = 2;
+}
+
+message GetPreviewVehiclesResponse {
+    option deprecated = true;
+
+    // The vehicles returned in this response will have fabricated identifiers and their position and headings do not
+    // necessarily correspond to real vehicles.
+    repeated ride_hail_commons.VehiclePreview vehicles = 1;
+}
+
+message GetBestPudolRequest {
+    option deprecated = true;
+
+    string fleet_id = 1;
+    geo.v1.Position position = 2;
+    bool relocate_only = 3;
+}
+
+message GetBestPudolResponse {
+    option deprecated = true;
+
+    ride_hail_commons.Pudol pudol = 1;
+}
+
+service RideHailRiderService {
+    // Request a trip
+    //
+    // Creates a new trip for a given rider in the `WAITING_FOR_ASSIGNMENT` state.
+    // The operation succeeds if the trip creation was successful and does not wait until a trip is assigned.
+    // To find out if a trip has been assigned or canceled, use the `GetTripState` operation.
+    rpc RequestTrip (RequestTripRequest) returns (RequestTripResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/RequestTripRC"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1)"
+        };
+    }
+
+    // Retrieve a trip's definition
+    //
+    // Returns the immutable definition of a trip, for example the trip type, pickup and drop-off location,
+    // and requested number of seats.
+    rpc GetTripDefinition (GetTripDefinitionRequest) returns (GetTripDefinitionResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/GetTripDefinition"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1)"
+        };
+    }
+
+    // Retrieve a trip's information
+    //
+    // Returns the relevant information about a trip, for example the rider contact information and additional properties.
+    rpc GetTripInfo (GetTripInfoRequest) returns (GetTripInfoResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/GetTripInfo"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1)"
+        };
+    }
+
+    // Retrieve a trip's state
+    //
+    // Returns the current state of a trip. Use this operation to pull the state continuously to be notified about state changes like
+    // the trip being assigned, the vehicle arriving at the pickup location, or cancellations.
+    rpc GetTripStateRC (GetTripStateRequestRC) returns (GetTripStateResponseRC) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/GetTripStateRC"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1)"
+        };
+    }
+
+    // Cancel a trip
+    //
+    // Cancel a trip and gives the option of providing a reason for the cancellation to be propagated to the vehicle, if it was assigned already.
+    rpc CancelTrip (CancelTripRequest) returns (CancelTripResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/CancelTrip"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1)"
+        };
+    }
+
+    // Update a trip's definition
+    //
+    // A trip's definition is immutable after creation. To update the trip definition, this operations
+    // replaces the original trip with a new trip. The new trip needs to have a new unique identifier.
+    // Use this method if the pickup/dropoff location needs to be changed, or the number of riders on a trip changes.
+    rpc ChangeTripDefinition (ChangeTripDefinitionRequest) returns (ChangeTripDefinitionResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/ChangeTripDefinition"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1)"
+        };
+    }
+
+    // Retrieve the active trip
+    //
+    // Returns the identifier of the active trip for a given rider, if the rider has an active trip.
+    // Note that a rider can only be on one active trip at the same time.
+    rpc GetActiveTripId (GetActiveTripIdRequest) returns (GetActiveTripIdResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/GetActiveTripId"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1)"
+        };
+    }
+
+    // Retrieve surrounding vehicles
+    //
+    // Returns vehicles of a given fleet in the vicinity in a given vicinity of the input coordinate.
+    // This endpoint is suitable for use in a client application and sanitizes the returned vehicle information.
+    rpc GetVehiclesInVicinity (GetVehiclesInVicinityRequest) returns (GetVehiclesInVicinityResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/GetVehiclesInVicinity"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1)"
+        };
+    }
+
+    // Find predefined stops
+    //
+    // Returns a list of stops predefined by the partner. This can be used to make the user select between fixed pickup locations,
+    // for example terminals at an airport, or fixed shuttle stops. The stop identifier can be used when requesting a trip as stop location.
+    rpc FindPredefinedStop (FindPredefinedStopRequest) returns (FindPredefinedStopResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/FindPredefinedStop"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1)"
+        };
+    }
+
+    //////////// DEPRECATED METHODS BELOW ////////////
+
+    // Use RequestTrip instead of this method
+    rpc RequestTripRC (RequestTripRequest) returns (RequestTripResponse) {
+        option deprecated = true;
+    }
+
+    // Instead of using this method, use the ChangeTripDefinition endpoint.
+    rpc UpdateTrip (UpdateTripRequest) returns (UpdateTripResponse) {
+        option deprecated = true;
+    }
+
+    // Query for the status of the current trip by passenger identifier
+    rpc QueryTrip (QueryTripRequest) returns (ride_hail_commons.PassengerTripInfo) {
+        option deprecated = true;
+    };
+
+    // Get the trip state
+    rpc GetTripState (GetTripStateRequest) returns (GetTripStateResponse) {
+        option deprecated = true;
+    }
+
+    // Preview the vehicles in a given area and fleet ID.
+    //
+    // This RPC can be directly called from a mobile app. Call this RPC if the vehicles will be displayed to an
+    // end-user.
+    rpc GetPreviewVehicles (GetPreviewVehiclesRequest) returns (GetPreviewVehiclesResponse) {
+        option deprecated = true;
+    };
+
+    // Get the PUDOL for a rider
+    rpc GetBestPudol (GetBestPudolRequest) returns (GetBestPudolResponse) {
+        option deprecated = true;
+    };
+}

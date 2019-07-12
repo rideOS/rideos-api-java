@@ -1,0 +1,137 @@
+/***********************************************************************************************************************
+ *
+ * Copyright 2018-2019 rideOS, Inc.
+ * rideOS confidential materials
+ *
+***********************************************************************************************************************/
+
+syntax = "proto3";
+
+package rideos.dispatch.v2;
+option java_package = "ai.rideos.api.dispatch.v2";
+option objc_class_prefix = "Dispatch";
+
+import "google/protobuf/duration.proto";
+import "rideos/dispatch/v2/common.proto";
+
+message PassengerTaskRequest {
+    // Required. Note that any given passenger may only have one active PassengerTask at a time.
+    string passenger_id = 1;
+
+    TaskLocation pickup_location = 2;
+
+    TaskLocation dropoff_location = 3;
+
+    // Required. Must be at least 1.
+    int32 num_passengers = 4;
+
+    // This task will only be assigned to vehicles with a matching fleet_id. If the fleet_id is not specified, the task
+    // will only be assigned to vehicles with a blank fleet_id.
+    string fleet_id = 5;
+
+    // How long to wait for a dispatch before timing out this task. If left unset, a default value will be selected.
+    // Set to a negative duration to disable the timeout.
+    google.protobuf.Duration dispatch_timeout = 6;
+
+    // Optional: A VehicleFilter can be used to force an assignment of the passenger to a specific vehicle. If unset,
+    // no filter is applied.
+    VehicleFilter vehicle_filter = 7;
+
+}
+
+message RequestPassengerTaskResponse {
+    string requested_task_id = 1;
+}
+
+message PassengerTaskInfo {
+    string task_id = 1;
+
+    // The current stage of the task.
+    TaskStage stage = 2;
+
+    // The assigned vehicle for this passenger. If a vehicle has not yet been assigned, this field is empty.
+    string assigned_vehicle_id = 3;
+
+    TaskLocation pickup_location = 4;
+
+    TaskLocation dropoff_location = 5;
+
+    // DEPRECATED(fyhuang): this field only works for the old xride drivers. Use vehicle_info.driver_contact_info instead
+    ContactInfo driver_contact_info = 6 [deprecated = true];
+
+    // The information for the assigned vehicle. This is empty if the task has not yet been assigned and may be empty if
+    // Dispatch does not have any info for the vehicle.
+    VehicleInfo vehicle_info = 7;
+
+    // The fleet ID associated with the task.
+    string fleet_id = 8;
+
+    // The cancellation reason for the task. This is empty if the task is not cancelled.
+    CancelReason cancel_reason = 9;
+
+    // If the current task is replaced or updated, this field will be set with the new task id.
+    string replacement_task_id = 10;
+
+    // This is an opaque token which can help with debugging. Attach this token to bug reports involving this task.
+    string optimization_token = 11;
+
+    int32 num_passengers = 12;
+
+}
+
+message QueryCurrentTaskRequest {
+    string passenger_id = 1;
+}
+
+message QueryTaskRequest {
+    string task_id = 1;
+}
+
+message CancelTaskRequest {
+    // The requestor ID. This needs to be equal to the "passenger_id" that was set when the task was requested.
+
+    string requestor_id = 1;
+
+    // The ID of the task to cancel.
+    string requested_task_id = 2;
+}
+
+message UpdatePickupDropoffTaskRequest {
+    string task_id = 1;
+
+    TaskLocation new_pickup_location = 4;
+
+    TaskLocation new_dropoff_location = 5;
+}
+
+message CancelTaskResponse {
+}
+
+message UpdatePickupDropoffTaskResponse {
+    string new_task_id = 1;
+}
+
+service DispatchTaskService {
+    // Request a new passenger task
+    //
+    // Use this method to request a new task for a passenger. The "passenger_id" can be used as the "requestor_id"
+    // to cancel the task later.
+    rpc RequestPassengerTask (PassengerTaskRequest) returns (RequestPassengerTaskResponse);
+
+    // Cancel an existing task
+    //
+    // Use this method to cancel an active task. If the task has already been assigned to a vehicle, it will be
+    // unassigned after calling this method.
+    rpc CancelTask (CancelTaskRequest) returns (CancelTaskResponse);
+
+    // Update an existing task
+    //
+    // This method will return a new task with a new ID and the original task will terminate with a `REPLACED` status.
+    rpc UpdatePickupDropoffTask (UpdatePickupDropoffTaskRequest) returns (UpdatePickupDropoffTaskResponse);
+
+    // Query for the status of the current task by passenger ID
+    rpc QueryCurrentTask (QueryCurrentTaskRequest) returns (PassengerTaskInfo);
+
+    // Query for the status of a task by identifier
+    rpc QueryTask (QueryTaskRequest) returns (PassengerTaskInfo);
+}

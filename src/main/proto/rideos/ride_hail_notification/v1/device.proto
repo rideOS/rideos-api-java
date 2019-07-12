@@ -1,0 +1,35 @@
+/***********************************************************************************************************************
+ *
+ * Copyright 2018-2019 rideOS, Inc.
+ * rideOS confidential materials
+ *
+***********************************************************************************************************************/
+
+syntax = "proto3";
+
+package rideos.ride_hail_notification.v1;
+option java_package = "ai.rideos.api.ride_hail_notification.v1";
+option objc_class_prefix = "RideHailNotification";
+
+import "rideos/ride_hail_notification/v1/notification_common.proto";
+
+message SetRiderDeviceInfoRequest {
+    string trip_id = 1;
+    DeviceInfo device_info = 2;
+}
+
+message SetRiderDeviceInfoResponse {
+}
+
+message SetDriverDeviceInfoRequest {
+    string vehicle_id = 1;
+    DeviceInfo device_info = 2;
+}
+
+message SetDriverDeviceInfoResponse {
+}
+
+service DeviceRegistryService {
+    rpc SetRiderDeviceInfo (SetRiderDeviceInfoRequest) returns (SetRiderDeviceInfoResponse);
+    rpc SetDriverDeviceInfo (SetDriverDeviceInfoRequest) returns (SetDriverDeviceInfoResponse);
+}

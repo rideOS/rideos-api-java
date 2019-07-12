@@ -1,0 +1,322 @@
+/***********************************************************************************************************************
+ *
+ * Copyright 2018-2019 rideOS, Inc.
+ * rideOS confidential materials
+ *
+***********************************************************************************************************************/
+
+syntax = "proto3";
+
+package rideos.ride_hail_operations.v1;
+option java_package = "ai.rideos.api.ride_hail_operations.v1";
+option objc_class_prefix = "RideHailOperations";
+
+import "google/protobuf/timestamp.proto";
+
+import "google/api/gapi_annotations.proto";
+import "grpc/gateway/protoc-gen-swagger/options/swagger_annotations.proto";
+
+import "rideos/commons/ride_hail_commons.proto";
+
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+    info: {
+        title: "RideHail Operations API"
+        version: "1.0"
+    }
+    responses: {
+        key: "400"
+        value: {
+            description: "The request was invalid."
+        }
+    }
+    responses: {
+        key: "401"
+        value: {
+            description: "The request was not correctly authorized. Please ensure you passed the correct API Key.";
+        }
+    }
+    responses: {
+        key: "403"
+        value: {
+            description: "Returned when the user does not have permission to access the resource.";
+        }
+    }
+    responses: {
+        key: "429"
+        value: {
+            description: "The rate limit was exceeded, please try again.";
+        }
+    }
+};
+
+message CreateFleetRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id", "info"]
+        }
+    };
+
+    // Client-provided identifier for the fleet. This value needs to be unique per partner and cannot be reused.
+    string id = 1;
+    // Information about the fleet, such as display names and custom properties.
+    ride_hail_commons.FleetInfo info = 2;
+}
+
+message CreateFleetResponse {
+}
+
+message RemoveFleetRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id"]
+        }
+    };
+
+    // Client-provided identifier of the fleet.
+    string id = 1;
+}
+
+message RemoveFleetResponse {
+}
+
+message GetFleetsRequest {
+}
+
+message GetFleetsResponse {
+    // List of all fleets for a partner
+    repeated ride_hail_commons.Fleet fleet = 1;
+}
+
+message GetVehiclesRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["fleet_id"]
+        }
+    };
+
+    // Client-provided identifier of the fleet that contains the vehicles
+    string fleet_id = 1;
+}
+
+message GetVehiclesResponse {
+    // List of all vehicles in the fleet of a partner
+    repeated ride_hail_commons.Vehicle vehicle = 1;
+}
+
+message GetTripsRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["fleet_id"]
+        } };
+
+    // Client-provided identifier of the fleet that contains the trips
+    string fleet_id = 1;
+
+    // Only trips that terminated after `from` (or are still active) will be returned, defaults to now.
+    google.protobuf.Timestamp from = 2;
+
+    // Only trips that were created before `to` will be returned, by defaults to now.
+    google.protobuf.Timestamp to = 3;
+}
+
+message GetTripsResponse {
+    // A list of all trips active in the given time window and fleet
+    repeated ride_hail_commons.Trip trip = 1;
+}
+
+//////////// DEPRECATED REQUEST/RESPONSE MESSAGES BELOW ////////////
+
+message MarkVehicleStaleRequest {
+    string vehicle_id = 1;
+}
+
+message MarkVehicleStaleResponse {
+
+}
+
+message GetAvailableVehiclesRequest {
+    string fleet_id = 1;
+}
+
+message GetAvailableVehiclesResponse {
+    repeated ride_hail_commons.AvailableVehicle vehicles = 1;
+}
+
+message AddPassengerInfoRequest {
+    string passenger_id = 1;
+    string passenger_name = 2;
+}
+
+message AddPassengerInfoResponse {
+}
+
+message GetFleetMetadataRequest {
+    string fleet_id = 1;
+}
+
+message GetFleetMetadataResponse {
+    ride_hail_commons.FleetMetadata fleet_metadata = 1;
+}
+
+message SetFleetMetadataRequest {
+    ride_hail_commons.FleetMetadata fleet_metadata = 1;
+}
+
+message SetFleetMetadataResponse {
+}
+
+message DeleteFleetMetadataRequest {
+    string fleet_id = 1;
+}
+
+message DeleteFleetMetadataResponse {
+}
+
+message GetFleetActiveTripsRequest {
+    string fleet_id = 1;
+}
+
+message GetFleetActiveTripsResponse {
+    repeated ride_hail_commons.ActiveTripInfo active_trip_info = 1 [deprecated = true];
+    repeated ride_hail_commons.DeprecatedTrip trip = 2;
+}
+
+message GetActiveVehiclesInFleetRequest {
+    string fleet_id = 1;
+
+    // Maximum number of vehicles to return
+    int32 max_vehicles = 2;
+}
+
+message GetActiveVehiclesResponse {
+    repeated ride_hail_commons.VehicleUIState vehicles = 1;
+    repeated ride_hail_commons.DeprecatedVehicle deprecated_vehicle = 2;
+}
+
+service RideHailOperationsService {
+
+    // Create a fleet
+    //
+    // Creates a new fleet with a partner-provided identifier and additional properties like a display name.
+    // Fleet properties are immutable and fleet identifiers cannot be reused after a fleet has been removed.
+    // A fleet needs to be created before a vehicle can be assigned to it.
+    rpc CreateFleet (CreateFleetRequest) returns (CreateFleetResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/operations/v1/CreateFleet"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1)"
+        };
+    }
+
+    // Remove a fleet
+    //
+    // Removes a fleet with given identifier. A fleet cannot be removed if there are still vehicles in it.
+    rpc RemoveFleet (RemoveFleetRequest) returns (RemoveFleetResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/operations/v1/RemoveFleet"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1)"
+        };
+    }
+
+    // Retrieve all fleets
+    //
+    // Returns a list of all fleets owned by the partner, excluding removed fleets.
+    // Might return a fleet with empty identifier, which denotes the default fleet.
+    rpc GetFleets (GetFleetsRequest) returns (GetFleetsResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/operations/v1/GetFleets"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1)"
+        };
+    }
+
+    // Retrive all vehicles
+    //
+    // Returns a list of all vehicles for a given fleet, both active and inactive.
+    // A vehicle will contain information about its state and current plan, contact information for the driver, and
+    // capacity.
+    rpc GetVehicles (GetVehiclesRequest) returns (GetVehiclesResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/operations/v1/GetVehicles"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1)"
+        };
+    }
+
+    // Retrive all trips
+    //
+    // Returns a list of all trips for a given fleet, both active and completed, in the provided time window of the
+    // request. If the timestamps are not set in the request, all currently active trips will be returned by default.
+    rpc GetTrips (GetTripsRequest) returns (GetTripsResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/operations/v1/GetTrips"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1)"
+        };
+    }
+
+    //////////// DEPRECATED METHODS BELOW ////////////
+
+    // MarkVehicleStale immediately marks a vehicle as stale, and should be called immediately before a vehicle powers
+    // off. The vehicle must have an empty Plan.
+    rpc MarkVehicleStale (MarkVehicleStaleRequest) returns (MarkVehicleStaleResponse) {
+        option deprecated = true;
+    }
+
+    // Get the available vehicles
+    rpc GetAvailableVehicles (GetAvailableVehiclesRequest) returns (GetAvailableVehiclesResponse) {
+        option deprecated = true;
+    }
+
+    rpc AddPassengerInfo (AddPassengerInfoRequest) returns (AddPassengerInfoResponse) {
+        option deprecated = true;
+    }
+
+    // Get any metadata associated with a certain fleet.
+    rpc GetFleetMetadata (GetFleetMetadataRequest) returns (GetFleetMetadataResponse) {
+        option deprecated = true;
+    }
+
+    // Set metadata to be associated with a fleet.
+    rpc SetFleetMetadata (SetFleetMetadataRequest) returns (SetFleetMetadataResponse) {
+        option deprecated = true;
+    }
+
+    // Delete metadata associated with a fleet.
+    rpc DeleteFleetMetadata (DeleteFleetMetadataRequest) returns (DeleteFleetMetadataResponse) {
+        option deprecated = true;
+    }
+
+    // Get all "active" tasks in a fleet.
+    //
+    // See the documentation on "Tasks" for more information:
+    // https://github.com/rideOS/examples/blob/master/grpc/docs/dispatch/v2/data_model_guide.md#task-state-transitions.
+    rpc GetFleetActiveTrips (GetFleetActiveTripsRequest) returns (GetFleetActiveTripsResponse) {
+        option deprecated = true;
+    }
+
+    // Get info on all "active" vehicles in a given fleet ID.
+    //
+    // The response is not filtered by geographical location. The information returned about each vehicle includes its
+    // full plan, currently assigned tasks, passengers currently in the vehicle, and so on. If this level of detail is
+    // not needed or not desired (e.g. for displaying preview vehicles on a map to passengers), see the
+    // GetPreviewVehicles method for an alternative.
+    rpc GetActiveVehiclesInFleet (GetActiveVehiclesInFleetRequest) returns (GetActiveVehiclesResponse) {
+        option deprecated = true;
+    }
+
+    rpc GetFleetsRC (GetFleetsRequest) returns (GetFleetsResponse) {
+        option deprecated = true;
+    }
+}
