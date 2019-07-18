@@ -84,8 +84,8 @@ message VehicleState {
     geo.v1.Position position = 1;
     // Last known heading of the vehicle in degrees 0...360 from true-north.
     google.protobuf.FloatValue heading = 2 [
-      (grpc.gateway.protoc_gen_swagger.options.openapiv2_field).minimum = 0.0,
-      (grpc.gateway.protoc_gen_swagger.options.openapiv2_field).maximum = 360.0
+       (grpc.gateway.protoc_gen_swagger.options.openapiv2_field).minimum = 0.0,
+       (grpc.gateway.protoc_gen_swagger.options.openapiv2_field).maximum = 360.0
     ];
     // Last time the vehicle updated its state.
     google.protobuf.Timestamp last_active_time = 3;
@@ -201,8 +201,7 @@ message PickupDropoff {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["pickup", "dropoff", "riderCount"]
-        }
-    };
+        } };
 
     // Pickup location of the trip.
     Stop pickup = 1;
@@ -310,6 +309,15 @@ message AssignedVehicle {
     // This includes the steps before the current trip will be started,
     // and all intermediate steps until the trip will be completed.
     VehicleState.Plan plan_through_trip_end = 3;
+
+    // Last known position of the vehicle as WGS84 coordinate.
+    geo.v1.Position position = 4;
+
+    // Last known heading of the vehicle in degrees 0...360 from true-north.
+    google.protobuf.FloatValue heading = 5 [
+        (grpc.gateway.protoc_gen_swagger.options.openapiv2_field).minimum = 0.0,
+        (grpc.gateway.protoc_gen_swagger.options.openapiv2_field).maximum = 360.0
+    ];
 }
 
 //////////// DEPRECATED! ////////////

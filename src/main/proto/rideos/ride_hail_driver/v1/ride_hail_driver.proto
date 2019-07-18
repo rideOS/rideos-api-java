@@ -121,9 +121,11 @@ message UpdateVehicleStateRequest {
         // Mark the vehicle as unavailable to be assigned new trips.
         SetToNotReady set_to_not_ready = 3;
         // Update one or more of the vehicle's route legs within its current plan.
-        OverrideRouteLegs override_route_legs = 4;
-        // Update the vehicle's current position.
+        SetRouteLegs set_route_legs = 4;
+        // Update the vehicle's current position and optionally its heading.
         UpdatePosition update_position = 5;
+
+        OverrideRouteLegs override_route_legs = 6 [deprecated = true];
     }
 
     message SetToReady {
@@ -132,9 +134,28 @@ message UpdateVehicleStateRequest {
     message SetToNotReady {
     }
 
-    message OverrideRouteLegs {
-        // Provide a new route until the `location` of a step with the given identifier.
-        map<string, ride_hail_commons.VehicleState.Step.RouteLeg> step_id_to_route_leg = 1;
+    message SetRouteLegs {
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+            json_schema: {
+                required: ["legDefinition"]
+            }
+        };
+
+        // A list of route legs to set within the plan
+        repeated LegDefinition leg_definition = 1;
+
+        message LegDefinition {
+            // The trip id from where the route leg originates
+            string from_trip_id = 1;
+            // The step id from where the route leg originates
+            string from_step_id = 2;
+            // The trip id where the route leg terminates
+            string to_trip_id = 3;
+            // The step id where the route leg terminates
+            string to_step_id = 4;
+            // The route leg
+            ride_hail_commons.VehicleState.Step.RouteLeg route_leg = 5;
+        }
     }
 
     message UpdatePosition {
@@ -148,6 +169,11 @@ message UpdateVehicleStateRequest {
         geo.v1.Position updated_position = 1;
         // Current heading of the vehicle
         google.protobuf.FloatValue updated_heading = 2;
+    }
+
+    message OverrideRouteLegs {
+        option deprecated = true;
+        map<string, ride_hail_commons.VehicleState.Step.RouteLeg> step_id_to_route_leg = 1;
     }
 }
 
