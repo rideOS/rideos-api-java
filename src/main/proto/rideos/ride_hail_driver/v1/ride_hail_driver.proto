@@ -230,7 +230,7 @@ message CancelTripRequest {
         }
     };
 
-    // Identifier of the trip to cancel. The trip will be reassigned to a different vehicle.
+    // Identifier of the trip to cancel.
     string id = 1;
     // Optional description outlinining the reason for canceling the trip.
     string description = 2;

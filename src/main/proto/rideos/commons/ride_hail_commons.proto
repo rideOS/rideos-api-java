@@ -53,6 +53,11 @@ message Stop {
     }
 }
 
+message PredefinedStop {
+    string id = 1;
+    geo.v1.Position position = 2;
+}
+
 //////////// FLEET ////////////
 
 // Grouping of vehicles for transporting riders
@@ -342,13 +347,6 @@ message AssignedVehicle {
 }
 
 //////////// DEPRECATED! ////////////
-
-message PredefinedStop {
-    option deprecated = true;
-
-    string id = 1;
-    geo.v1.Position position = 2;
-}
 
 message AvailableVehicle {
     option deprecated = true;
