@@ -119,7 +119,8 @@ message VehicleState {
         // Client-provided identifier for the trip.
         string trip_id = 2;
         // Location at which the step will be completed.
-        Stop location = 3;
+        // Location at which the step will be completed.
+        geo.v1.Position position = 4;
 
         oneof vehicle_action {
             // State information for driving to the step `location`, e.g. the route information.
@@ -169,6 +170,8 @@ message VehicleInfo {
     DriverInfo driver_info = 1;
     // Additional properties for storing partner-specific information about the vehicle, as string key value pairs.
     map<string, string> properties = 2;
+    // The vehicle's license plate number.
+    string license_plate = 3;
 }
 
 // Information about the driver, if applicable

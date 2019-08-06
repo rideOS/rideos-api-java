@@ -94,7 +94,6 @@ message GetVehicleInfoRequest {
 
 message GetVehicleInfoResponse {
     // Deprecated: Old-style vehicle information.
-    ride_hail_commons.DeprecatedVehicleInfo vehicle_info = 1 [deprecated = true];
     // Information about the vehicle that are not used for optimization.
     ride_hail_commons.VehicleInfo info = 2;
 }
@@ -409,9 +408,7 @@ service RideHailDriverService {
 
     // Remove a vehicle
     //
-    // Removes a vehicle with the provided identifier. A vehicle cannot be removed if it is assigned a trip. Note: A
-    // removal is permanent. Once a vehicle has been removed, it cannot be added back via the CreateVehicle call, and
-    // its identifier cannot be used for any new vehicles that come online.
+    // Removes a vehicle with the provided identifier. A vehicle cannot be removed if it is assigned a trip.
     rpc RemoveVehicle (RemoveVehicleRequest) returns (RemoveVehicleResponse) {
         option (google.api.http) = {
             post: "/ridehail/driver/v1/RemoveVehicle"
