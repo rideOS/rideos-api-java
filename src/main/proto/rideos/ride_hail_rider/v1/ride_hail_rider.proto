@@ -283,12 +283,10 @@ message FindPredefinedStopRequest {
             required: ["fleetId", "queryPosition"]
         } };
 
-    // The fleet identifier to get predefined stop for.
+    // The fleet identifier to get the predefined stop for.
     string fleet_id = 1;
-    // The location where we want to look around for predefined stops.
-    geo.v1.Position query_position = 2;
-    // Extra-filters to apply when selecting predefined stops.
-    StopSearchParameters search_parameters = 3;
+    // Filters to apply when searching for predefined stops.
+    StopSearchParameters search_parameters = 2;
 }
 
 message FindPredefinedStopResponse {
@@ -297,8 +295,16 @@ message FindPredefinedStopResponse {
 }
 
 message StopSearchParameters {
-    // List of tags to select.
+    // List of tags to select for.
     repeated string filter_tag = 1;
+
+    oneof parameters {
+        // The location where we want to look around for predefined stops.
+        geo.v1.Position query_position = 2;
+
+        // The id of the stop to return. Providing this is a way to obtain a PredefinedStop by its id alone.
+        string stop_id = 3;
+    }
 }
 
 //////////// DEPRECATED REQUEST/RESPONSE MESSAGES BELOW ////////////

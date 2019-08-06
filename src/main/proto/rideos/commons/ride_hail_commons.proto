@@ -150,10 +150,18 @@ message VehicleState {
 
         // Vehicle is waiting to pick up the rider
         message PickupRider {
+            // Number of riders to be picked up
+            uint32 rider_count = 1;
+            // Information about the rider such as contact info.
+            RiderInfo rider_info = 2;
         }
 
         // Vehicle is waiting for the rider to leave
         message DropoffRider {
+            // Number of riders to be dropped off
+            uint32 rider_count = 1;
+            // Information about the rider such as contact info.
+            RiderInfo rider_info = 2;
         }
     }
 }
@@ -408,8 +416,6 @@ enum NotReadyForDispatchTaskAction {
 }
 
 message VehicleFilter {
-    option deprecated = true;
-
     oneof type {
         // Force the task to be dispatched to the vehicle with this vehicle id
         string vehicle_id = 1;

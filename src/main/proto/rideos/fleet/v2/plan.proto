@@ -24,6 +24,9 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
+
+import "google/api/gapi_annotations.proto";
+import "grpc/gateway/protoc-gen-swagger/options/swagger_annotations.proto";
 import "rideos/geo/v1/geo.proto";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,37 +38,80 @@ import "rideos/geo/v1/geo.proto";
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+    info: {
+        title: "Fleet Planner API"
+        version: "2.0"
+    }
+    responses: {
+        key: "400"
+        value: {
+            description: "The request was invalid.";
+        }
+    }
+    responses: {
+        key: "401"
+        value: {
+            description: "The request was not correctly authorized. Please ensure you passed in the correct API Key.";
+        }
+    }
+    responses: {
+        key: "429"
+        value: {
+            description: "The rate limit was exceeded, please try again.";
+        }
+    }
+};
+
 service FleetPlanService {
-    // Performs a re-optimization of the Plans for relevant vehicles, returning a set of recommended updated Plans.
-    rpc GetPlan (GetPlanRequest) returns (GetPlanResponse);
+    // Creates a set of plan recommendation for a given a current set of vehicles and tasks.
+    rpc GetPlan (GetPlanRequest) returns (GetPlanResponse) {
+        option (google.api.http) = {
+            post: "/fleet/v2/GetPlan"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "Fleet Planner API (v2)"
+        };
+    };
 }
 
 message GetPlanRequest {
-    // Vehicles for which to provide plan recommendations. Map from vehicle ID to Vehicle
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["vehicles", "tasks"]
+        }
+    };
+
+    // Vehicles for which to provide plan recommendations. 
+    // Map from vehicle identifier to `Vehicle` object.
     map<string, Vehicle> vehicles = 1;
 
     // Tasks that the vehicles should service. Should include both tasks that are reflected in the current
-    // vehicle plans, as well as new tasks that need to be incorporated into vehicle plans.  Map from task ID to Task
+    // vehicle plans, as well as new tasks that need to be incorporated into vehicle plans. Map from task identifier to `Task` object.
     map<string, Task> tasks = 4;
 
-    // If true, the inital plan may have tasks reassigned to new vehicles when doing so provides a better solution
+    // If true, the inital plan may have tasks reassigned to new vehicles when doing so provides a better solution.
     bool allow_vehicle_reassignment = 5;
 
+    // Specifies the optimization profile to use within the fleet planning algorithm.
     OptimizationProfile optimize_for = 6;
 
 }
 
 message GetPlanResponse {
-    // Recommended plan for each vehicle
+    // Recommended plan for each vehicle.
     repeated VehiclePlanRecommendation recommendations = 1;
-    // Tasks that could not be solved for
+    // Tasks that could not be solved for.
     repeated UnresolvedTask unresolved_tasks = 2;
 }
 
+// Unresolved task
 message UnresolvedTask {
     string task_id = 1;
 }
 
+// Vehicle
 message Vehicle {
     // The vehicle's position.
     rideos.geo.v1.Position position = 1;
@@ -83,30 +129,38 @@ message Vehicle {
     // The vehicle's current plan.
     VehiclePlan current_plan = 4;
 
+    // Identifier of the vehicle.
     string vehicle_id = 5;
 
+    // Restrict any task insertions or swaps up to this number leg in the plan. For example, passing a value of 2
+    // for this field will restrict any insertions happening in the first two legs of the plan.
+    uint32 restrict_task_insertions_up_to = 6;
 }
 
+// Recommendation for a vehicle
 message VehiclePlanRecommendation {
-    // The ID of the vehicle for whom this recommendation applies
+    // The identifier of the vehicle for whom this recommendation applies.
     string vehicle_id = 1;
 
-    // The plan recommendation for the vehicle
+    // The plan recommendation for the vehicle.
     VehiclePlan plan_recommendation = 2;
 }
 
+// Vehicle plan
 message VehiclePlan {
-    // The steps to be completed, in order
+    // The steps to be completed, in order.
     repeated AssignedStep assigned_steps = 1;
 }
 
+// Assigned step
 message AssignedStep {
-    // ID of the corresponding Task
+    // Identifier of the corresponding Task.
     string task_id = 1;
 
-    // Whether this AssignedStep corresponds to the pickup or dropoff step
+    // Whether this AssignedStep corresponds to the pickup or dropoff step.
     StepType step_type = 2;
 
+    // The remaining time to start the task in fractions of a second.
     double remaining_time = 3;
 
     enum StepType {
@@ -116,6 +170,7 @@ message AssignedStep {
     }
 }
 
+// Task
 message Task {
     // The number of resources (ex: seats for passengers) that are consumed when the pickup step is completed and
     // released when the dropoff step is completed.
@@ -127,6 +182,9 @@ message Task {
     // The dropoff step. Will always occur after the pickup step.
     DropoffStep dropoff_step = 3;
 
+    // Whether or not the task should be served as a shared or private ride. If this is set to true, the task will be
+    // served by a vehicle and not pooled with other tasks.
+    bool private_ride = 4;
 
     message PickupStep {
         // The desired position at which the Step should occur.
@@ -140,8 +198,7 @@ message Task {
         // If the PickupStep has not been completed, this should be omitted/empty.
         string completed_by_vehicle_id = 3;
 
-        // Desired time window within which this step should occur. Treated as a "soft constraint" - i.e. the actual
-        // service time may occur outside of this time window
+        // Desired time window within which this step should occur.
         TimeWindow desired_service_time = 4;
 
 
@@ -158,20 +215,25 @@ message Task {
         // Measured clockwise from true North - i.e. 0 is true North, 90 is East, 180 is South, 270 is West, etc..
         google.protobuf.FloatValue heading = 2;
 
-        // Desired time window within which this step should occur. Treated as a "soft constraint" - i.e. the actual
-        // service time may occur outside of this time window
+        // Desired time window within which this step should occur.
         TimeWindow desired_service_time = 3;
 
     }
 }
 
+// Time window
 message TimeWindow {
+    // The beginning of the time window.
     google.protobuf.Timestamp start = 1;
+
+    // The end of the time window.
     google.protobuf.Timestamp end = 2;
 }
 
-// An optimization profile is used in planner to determine the type of costing we use in the optimization.
+// An optimization profile is used in Fleet Planner to determine the type of cost function used.
 enum OptimizationProfile {
+    // An optimization profile used for Ride Hail. Minimizes rider wait times and ride times.
     RIDE_HAIL = 0;
+    // An optimization profile used for the goods delivery use case. Minimizes total vehicle distance.
     GOODS = 1;
 }
