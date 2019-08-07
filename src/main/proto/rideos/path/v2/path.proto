@@ -21,10 +21,14 @@ option java_package = "ai.rideos.api.path.v2";
 option java_outer_classname = "PathProto";
 option objc_class_prefix = "Path";
 
-import "rideos/geo/v1/geo.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
+
+import "google/api/gapi_annotations.proto";
+import "grpc/gateway/protoc-gen-swagger/options/swagger_annotations.proto";
+
+import "rideos/geo/v1/geo.proto";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -34,11 +38,54 @@ import "google/protobuf/duration.proto";
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+    info: {
+        title: "Path API"
+        version: "2.0"
+    }
+    responses: {
+        key: "400"
+        value: {
+            description: "The request was invalid.";
+        }
+    }
+    responses: {
+        key: "401"
+        value: {
+            description: "The request was not correctly authorized. Please ensure you passed in the correct API Key.";
+        }
+    }
+    responses: {
+        key: "429"
+        value: {
+            description: "The rate limit was exceeded, please try again.";
+        }
+    }
+};
+
 service PathService {
-    rpc GetPath (PathRequest) returns (PathResponse);
+    // Find optimal path between waypoints
+    //
+    // Returns the optimal path for a vehicle to drive between the given waypoints. The path factors in real-time
+    // traffic as well as any provided constraints.
+    rpc GetPath (PathRequest) returns (PathResponse) {
+        option (google.api.http) = {
+                post: "/path/v2/GetPath"
+                body: "*"
+            };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+                tags: "Path API (v2)"
+            };
+    };
 }
 
 message PathRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["waypoints"]
+        }
+    };
+
     // List of waypoints the path needs to pass through, at least two waypoints are required.
     repeated Waypoint waypoints = 1;
 
@@ -46,25 +93,30 @@ message PathRequest {
     // which the path request is processed.
     google.protobuf.Timestamp departure_time = 2;
 
-    // Optional: The path will avoid traversing edges that match any EdgeMatcher in this list
+    // Optional: The path will avoid traversing edges that match any EdgeMatcher in this list.
     repeated EdgeMatcher excluded_edges = 3;
 
-    // Optional but recommended: ID of the vehicle that will make the journey from the origin to the destination. By
+    // Optional but recommended: Identifier of the vehicle that will make the journey from the origin to the destination. By
     // providing this, along with real-time vehicle position updates through the Vehicle Position service, rideOS is
     // able to provide ETA accuracy metrics by comparing predicted travel time with actual travel time.
     string vehicle_id = 4;
 
     enum GeometryFormat {
-        NONE = 0; // Do not return the geometry
-        LINESTRING = 1; // Return the geometry as LineString object
-        POLYLINE = 2; // Return the geometry as Google-style polyline using 5 decimal places
+        // Do not return the geometry.
+        NONE = 0;
+        // Return the geometry as LineString object.
+        LINESTRING = 1;
+        // Return the geometry as Google-style polyline using 5 decimal places.
+        POLYLINE = 2;
     }
 
     GeometryFormat geometry_format = 5;
 
     enum CurbApproach {
-        UNSPECIFIED = 0; // We will not consider the driving direction when snapping the waypoints
-        DRIVING_SIDE = 1; // We will snap points according to the driving direction of the country
+        // We will not consider the driving direction when snapping the waypoints.
+        UNSPECIFIED = 0;
+        // We will snap points according to the driving direction of the country.
+        DRIVING_SIDE = 1;
     }
 
     CurbApproach curb_approach = 6;
@@ -88,23 +140,38 @@ message PathResponse {
     repeated Path paths = 3;
 }
 
+// Waypoint
 message Waypoint {
-    // Position of the vehicle at the waypoint
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["position"]
+        }
+    };
+
+    // Position of the vehicle at the waypoint.
     geo.v1.Position position = 1;
-    // Optional: Heading of the vehicle at the waypoint
-    google.protobuf.FloatValue heading = 2;
+    // Optional: Heading of the vehicle at the waypoint.
+    google.protobuf.FloatValue heading = 2 [(grpc.gateway.protoc_gen_swagger.options.openapiv2_field).minimum = 0.0, (grpc.gateway.protoc_gen_swagger.options.openapiv2_field).maximum = 360.0];
 
     enum Type {
-        STOP = 0; // (Default) Path will be split in a new leg at this waypoint
-        PASS_THROUGH = 1; // Path will be continue as the same leg
+        // (Default) Path will be split in a new leg at this waypoint.
+        STOP = 0;
+        // Path will be continue as the same leg.
+        PASS_THROUGH = 1;
     }
     // Optional: Define if the path will be split at waypoints or not, default is to split.
     Type type = 3;
-    // Optional: Planned time it will take to go through this waypoint, default is 0.
+    // Optional: Planned time it will take to go through this waypoint, default is 0 seconds.
     google.protobuf.Duration service_time = 4;
 }
 
 message EdgeMatcher {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["attributeMatcher", "constraintMatcher", "globalConstraintMatcher"]
+        }
+    };
+
     oneof type {
         AttributeMatcher attribute_matcher = 1;
         ConstraintMatcher constraint_matcher = 2;
@@ -112,20 +179,33 @@ message EdgeMatcher {
     }
 
     enum Operator {
+        // Do not use this value.
         UNKNOWN = 0;
+        // Equality between the compared value and the matcher value.
         EQUALS = 1;
     }
 
-    // An EdgeMatcher that is based on an attribute that's attached to a map feature in the underlying data.
-    // For instance, if edges in the underlying data contain a field called "lane_type" with possible values
-    // ("STRAIGHT", LEFT_TURN", "RIGHT_TURN", and "U_TURN") and we want to match edges that are  U-turns, we could
+    // AttributeMatcher
+    //
+    // A matcher that is based on an attribute that's attached to a map feature in the underlying data.
+    // For instance, if edges in the underlying data contain a field called `lane_type` with possible values
+    // (`STRAIGHT`, `LEFT_TURN`, `RIGHT_TURN`, and `U_TURN`) and we want to match edges that are  U-turns, we could
     // use the following AttributeMatcher:
-    // {"key": "lane_type", "operator":"EQUALS", "string": "U_TURN"}
+    // `{"key": "lane_type", "operator":"EQUALS", "string": "U_TURN"}`
     message AttributeMatcher {
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+            json_schema: {
+                required: ["key", "operator", "string", "double", "bool"]
+            }
+        };
+
+        // The key of the attribute to match.
         string key = 1;
 
+        // The operator to use when comparing the values of an attribute with the same key.
         Operator operator = 2;
 
+        // The value of an attribute to match using the operator.
         oneof value {
             string string = 3;
             double double = 4;
@@ -133,22 +213,34 @@ message EdgeMatcher {
         }
     }
 
-    // An EdgeMatcher that is based on map rule constraint tags matched on the underlying map features.
-    // For instance, if an avoid area map rule is set with the tag "construction_zone=true", we can route around these
+    // ConstraintMatcher
+    //
+    // A matcher that is based on map rule constraint tags matched on the underlying map features.
+    // For instance, if an avoid area map rule is set with the tag `construction_zone=true`, we can route around these
     // by setting:
-    // {"key": "construction_zone", "operator": "EQUALS", "bool": true}
+    // `{"key": "construction_zone", "operator": "EQUALS", "bool": true}`
     message ConstraintMatcher {
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+            json_schema: {
+                required: ["key", "operator", "double", "bool"]
+            } };
+
+        // The key of the tag of the constraint to match.
         string key = 1;
 
+        // The operator to use when comparing the values of a tag with the same key.
         Operator operator = 2;
 
+        // The value of the tag to match using the operator.
         oneof value {
             double double = 3;
             bool bool = 4;
         }
     }
 
-    // An EdgeMatcher that matches all constraints.
+    // GlobalConstraintMatcher
+    //
+    // A matcher that matches all constraints.
     message GlobalConstraintMatcher {
 
     }
@@ -156,20 +248,20 @@ message EdgeMatcher {
 
 message Leg {
     oneof geometry {
-        // Geometry for the path encoded as line
+        // Geometry for the path encoded as line.
         rideos.geo.v1.LineString line_string = 1;
 
-        // Google-encoded polyline representing the geometry
+        // Google-encoded polyline representing the geometry.
         // For details, see https://developers.google.com/maps/documentation/utilities/polylinealgorithm
         string polyline = 2;
     }
 
-    // Expected length of time required to traverse the leg excluding service times
+    // Expected length of time required to traverse the leg excluding service times.
     google.protobuf.Duration travel_time = 3;
 
     // In cases where it is impossible to provide a path without violating any of the excluded_edges in the
     // request, we will still provide a least-cost path, but this array will contain a list of the XEdgeMatcher
-    // instances that matched any edge in the returned path
+    // instances that matched any edge in the returned path.
     repeated EdgeMatcher violated_edge_exclusions = 4;
 
     // Total distance in meters of the Leg
@@ -177,10 +269,10 @@ message Leg {
 }
 
 message Path {
-    // Path split into legs at each stopping waypoint
+    // Path split into legs at each stopping waypoint.
     repeated Leg legs = 1;
-    // Expected length of time required to traverse the Path including service times
+    // Expected length of time required to traverse the Path including service times.
     google.protobuf.Duration travel_time = 2;
-    // Total distance in meters of the Path (i.e. the sum of the distances of each Leg)
+    // Total distance in meters of the Path (i.e. the sum of the distances of each Leg).
     double distance = 3;
 }
