@@ -32,7 +32,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.8'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.10'
+        classpath 'com.vanniktech:gradle-maven-publish-plugin:0.7.0'
     }
 }
 
@@ -41,9 +42,7 @@ clean {
 }
 
 protobuf {
-    // Configure the protoc executable
     protoc {
-        // Download from repositories
         artifact = 'com.google.protobuf:protoc:3.5.1'
     }
     plugins {
@@ -57,3 +56,6 @@ protobuf {
         }
     }
 }
+
+
+apply plugin: 'com.vanniktech.maven.publish'
