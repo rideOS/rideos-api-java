@@ -1,13 +1,20 @@
-# rideOS API
+# rideOS Java API Bindings
 
-This repository stores the proto interface files for interacting with our various services.
+This repository builds the Java API bindings for interacting with our various services.
 
 ## Building
 
-This project uses gradle to build. You can use the command
+This project uses gradle to build. There are two build variants for this repository: one for general Java clients and
+one for Android clients. The standard Java bindings depend on `protobuf-java`, whereas the Android bindings depend on
+`protobuf-lite`.
 
+To build the Java bindings, run:
 ```
-./gradlew build
+./gradlew -b build-java.gradle build
+```
+To build the Android bindings, run:
+```
+./gradlew -b build-android.gradle build
 ```
 
 ## Running
