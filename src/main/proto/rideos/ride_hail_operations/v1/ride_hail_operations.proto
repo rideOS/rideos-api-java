@@ -246,7 +246,7 @@ service RideHailOperationsService {
         };
     }
 
-    // Retrive all vehicles
+    // Retrieve all vehicles
     //
     // Returns a list of all vehicles for a given fleet, both active and inactive.
     // A vehicle will contain information about its state and current plan, contact information for the driver, and
@@ -261,7 +261,7 @@ service RideHailOperationsService {
         };
     }
 
-    // Retrive all trips
+    // Retrieve all trips
     //
     // Returns a list of all trips for a given fleet, both active and completed, in the provided time window of the
     // request. If the timestamps are not set in the request, all currently active trips will be returned by default.
