@@ -93,8 +93,8 @@ message PathRequest {
     // which the path request is processed.
     google.protobuf.Timestamp departure_time = 2;
 
-    // Optional: The path will avoid traversing edges that match any EdgeMatcher in this list.
-    repeated EdgeMatcher excluded_edges = 3;
+    // Deprecated. Use the new mechanism for specifying blacklist and whitelist constraint IDs.
+    repeated EdgeMatcher excluded_edges = 3 [deprecated = true];
 
     // Optional but recommended: Identifier of the vehicle that will make the journey from the origin to the destination. By
     // providing this, along with real-time vehicle position updates through the Vehicle Position service, rideOS is
@@ -121,9 +121,19 @@ message PathRequest {
 
     CurbApproach curb_approach = 6;
 
+    // Optional: the path will avoid traversing these blacklist constraints. Blacklist constraints take precedence over
+    // whitelist constraints if both are specified.
+    repeated string blacklist_constraint_ids = 10;
+
+    // Optional: if provided, this list of identifiers defines a whitelist. The whitelist consists of the union of all
+    // constraints listed. The path will avoid traversing edges that are not in this whitelist. Blacklist constraints
+    // take precedence over whitelist constraints if both are specified.
+    repeated string whitelist_constraint_ids = 11;
+
 
     string basemap_id = 7;
 
+    reserved 1000;
 
 
 }
@@ -166,6 +176,8 @@ message Waypoint {
 }
 
 message EdgeMatcher {
+    option deprecated = true;
+
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["attributeMatcher", "constraintMatcher", "globalConstraintMatcher"]
@@ -259,13 +271,20 @@ message Leg {
     // Expected length of time required to traverse the leg excluding service times.
     google.protobuf.Duration travel_time = 3;
 
-    // In cases where it is impossible to provide a path without violating any of the excluded_edges in the
-    // request, we will still provide a least-cost path, but this array will contain a list of the XEdgeMatcher
-    // instances that matched any edge in the returned path.
-    repeated EdgeMatcher violated_edge_exclusions = 4;
+    // Deprecated. Use the new mechanism for violated blacklist constraint IDs and violated whitelist instead.
+    repeated EdgeMatcher violated_edge_exclusions = 4 [deprecated = true];
 
     // Total distance in meters of the Leg
     double distance = 5;
+
+    // In cases where it is impossible to provide a path without violating any of the excluded_edges in the
+    // request, we will still provide a least-cost path, but this array will contain a list of the XEdgeMatcher
+    // instances that matched any edge in the returned path.
+    repeated string violated_blacklist_constraint_ids = 6;
+
+    // In cases where it is impossible to provide a path without violating the whitelist in the request, we will still
+    // provide a least-cost path, but this flag will be set to true to indicate that the whitelist was violated.
+    bool violated_whitelist = 7;
 }
 
 message Path {

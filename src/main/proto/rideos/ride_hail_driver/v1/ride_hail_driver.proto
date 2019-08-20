@@ -353,7 +353,7 @@ service RideHailDriverService {
     // Vehicle properties are immutable and vehicle identifiers cannot be reused after a vehicle has been removed.
     rpc CreateVehicle (CreateVehicleRequest) returns (CreateVehicleResponse) {
         option (google.api.http) = {
-            post: "/ridehail/driver/v1/CreateVehicle"
+            post: "/ride-hail-driver/v1/CreateVehicle"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -366,7 +366,7 @@ service RideHailDriverService {
     // Retrieves information about the vehicle and its driver, such as contact information and additional properties.
     rpc GetVehicleInfo (GetVehicleInfoRequest) returns (GetVehicleInfoResponse) {
         option (google.api.http) = {
-            post: "/ridehail/driver/v1/GetVehicleInfo"
+            post: "/ride-hail-driver/v1/GetVehicleInfo"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -380,7 +380,7 @@ service RideHailDriverService {
     // vehicle, the current position and heading, and whether or not the vehicle can be assigned new trips.
     rpc GetVehicleState (GetVehicleStateRequest) returns (GetVehicleStateResponse) {
         option (google.api.http) = {
-            post: "/ridehail/driver/v1/GetVehicleState"
+            post: "/ride-hail-driver/v1/GetVehicleState"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -398,7 +398,7 @@ service RideHailDriverService {
     // 4) Update the vehicle's position and optionally its heading
     rpc UpdateVehicleState (UpdateVehicleStateRequest) returns (UpdateVehicleStateResponse) {
         option (google.api.http) = {
-            post: "/ridehail/driver/v1/UpdateVehicleState"
+            post: "/ride-hail-driver/v1/UpdateVehicleState"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -411,7 +411,7 @@ service RideHailDriverService {
     // Removes a vehicle with the provided identifier. A vehicle cannot be removed if it is assigned a trip.
     rpc RemoveVehicle (RemoveVehicleRequest) returns (RemoveVehicleResponse) {
         option (google.api.http) = {
-            post: "/ridehail/driver/v1/RemoveVehicle"
+            post: "/ride-hail-driver/v1/RemoveVehicle"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -425,7 +425,7 @@ service RideHailDriverService {
     // For example, this needs to called whenever a vehicle picked up a passenger, or dropped a passenger off.
     rpc CompleteStep (CompleteStepRequest) returns (CompleteStepResponse) {
         option (google.api.http) = {
-            post: "/ridehail/driver/v1/CompleteStep"
+            post: "/ride-hail-driver/v1/CompleteStep"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -438,7 +438,7 @@ service RideHailDriverService {
     // Cancels a trip with the provided trip identifier.
     rpc CancelTrip (CancelTripRequest) returns (CancelTripResponse) {
         option (google.api.http) = {
-            post: "/ridehail/driver/v1/CancelTrip"
+            post: "/ride-hail-driver/v1/CancelTrip"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -452,7 +452,7 @@ service RideHailDriverService {
     // locations).
     rpc GetTripInfo (GetTripInfoRequest) returns (GetTripInfoResponse) {
         option (google.api.http) = {
-            post: "/ridehail/driver/v1/GetTripInfo"
+            post: "/ride-hail-driver/v1/GetTripInfo"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {

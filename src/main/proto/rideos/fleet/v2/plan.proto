@@ -186,6 +186,10 @@ message Task {
     // served by a vehicle and not pooled with other tasks.
     bool private_ride = 4;
 
+    // Vehicles that are blacklisted by this task to prevent fleet planner from reassigning the same task to vehicles
+    // that rejected it.
+    repeated string blacklisted_vehicle_id = 5;
+
     message PickupStep {
         // The desired position at which the Step should occur.
         rideos.geo.v1.Position position = 1;

@@ -211,7 +211,7 @@ service RideHailOperationsService {
     // A fleet needs to be created before a vehicle can be assigned to it.
     rpc CreateFleet (CreateFleetRequest) returns (CreateFleetResponse) {
         option (google.api.http) = {
-            post: "/ridehail/operations/v1/CreateFleet"
+            post: "/ride-hail-operations/v1/CreateFleet"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -224,7 +224,7 @@ service RideHailOperationsService {
     // Removes a fleet with given identifier. A fleet cannot be removed if there are still vehicles in it.
     rpc RemoveFleet (RemoveFleetRequest) returns (RemoveFleetResponse) {
         option (google.api.http) = {
-            post: "/ridehail/operations/v1/RemoveFleet"
+            post: "/ride-hail-operations/v1/RemoveFleet"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -238,7 +238,7 @@ service RideHailOperationsService {
     // Might return a fleet with empty identifier, which denotes the default fleet.
     rpc GetFleets (GetFleetsRequest) returns (GetFleetsResponse) {
         option (google.api.http) = {
-            post: "/ridehail/operations/v1/GetFleets"
+            post: "/ride-hail-operations/v1/GetFleets"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -253,7 +253,7 @@ service RideHailOperationsService {
     // capacity.
     rpc GetVehicles (GetVehiclesRequest) returns (GetVehiclesResponse) {
         option (google.api.http) = {
-            post: "/ridehail/operations/v1/GetVehicles"
+            post: "/ride-hail-operations/v1/GetVehicles"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -267,7 +267,7 @@ service RideHailOperationsService {
     // request. If the timestamps are not set in the request, all currently active trips will be returned by default.
     rpc GetTrips (GetTripsRequest) returns (GetTripsResponse) {
         option (google.api.http) = {
-            post: "/ridehail/operations/v1/GetTrips"
+            post: "/ride-hail-operations/v1/GetTrips"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {

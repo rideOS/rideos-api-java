@@ -440,7 +440,7 @@ service RideHailRiderService {
     // To find out if a trip has been assigned or canceled, use the `GetTripState` operation.
     rpc RequestTrip (RequestTripRequest) returns (RequestTripResponse) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/RequestTripRC"
+            post: "/ride-hail-rider/v1/RequestTripRC"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -454,7 +454,7 @@ service RideHailRiderService {
     // and requested number of seats.
     rpc GetTripDefinition (GetTripDefinitionRequest) returns (GetTripDefinitionResponse) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/GetTripDefinition"
+            post: "/ride-hail-rider/v1/GetTripDefinition"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -467,7 +467,7 @@ service RideHailRiderService {
     // Returns the relevant information about a trip, for example the rider contact information and additional properties.
     rpc GetTripInfo (GetTripInfoRequest) returns (GetTripInfoResponse) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/GetTripInfo"
+            post: "/ride-hail-rider/v1/GetTripInfo"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -481,7 +481,7 @@ service RideHailRiderService {
     // the trip being assigned, the vehicle arriving at the pickup location, or cancellations.
     rpc GetTripStateRC (GetTripStateRequestRC) returns (GetTripStateResponseRC) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/GetTripStateRC"
+            post: "/ride-hail-rider/v1/GetTripStateRC"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -494,7 +494,7 @@ service RideHailRiderService {
     // Cancel a trip and gives the option of providing a reason for the cancellation to be propagated to the vehicle, if it was assigned already.
     rpc CancelTrip (CancelTripRequest) returns (CancelTripResponse) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/CancelTrip"
+            post: "/ride-hail-rider/v1/CancelTrip"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -509,7 +509,7 @@ service RideHailRiderService {
     // Use this method if the pickup/dropoff location needs to be changed, or the number of riders on a trip changes.
     rpc ChangeTripDefinition (ChangeTripDefinitionRequest) returns (ChangeTripDefinitionResponse) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/ChangeTripDefinition"
+            post: "/ride-hail-rider/v1/ChangeTripDefinition"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -523,7 +523,7 @@ service RideHailRiderService {
     // Note that a rider can only be on one active trip at the same time.
     rpc GetActiveTripId (GetActiveTripIdRequest) returns (GetActiveTripIdResponse) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/GetActiveTripId"
+            post: "/ride-hail-rider/v1/GetActiveTripId"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -537,7 +537,7 @@ service RideHailRiderService {
     // This endpoint is suitable for use in a client application and sanitizes the returned vehicle information.
     rpc GetVehiclesInVicinity (GetVehiclesInVicinityRequest) returns (GetVehiclesInVicinityResponse) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/GetVehiclesInVicinity"
+            post: "/ride-hail-rider/v1/GetVehiclesInVicinity"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -551,7 +551,7 @@ service RideHailRiderService {
     // for example terminals at an airport, or fixed shuttle stops. The stop identifier can be used when requesting a trip as stop location.
     rpc FindPredefinedStop (FindPredefinedStopRequest) returns (FindPredefinedStopResponse) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/FindPredefinedStop"
+            post: "/ride-hail-rider/v1/FindPredefinedStop"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
