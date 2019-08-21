@@ -109,8 +109,7 @@ message MarkVehicleStaleResponse {
 }
 
 message VehicleCancelTaskRequest {
-    // The vehicle ID rejecting the task.
-    string vehicle_id = 1;
+    string vehicle_id = 1 [deprecated = true];
 
     // The task ID to cancel.
     string task_id = 2;
@@ -120,6 +119,20 @@ message VehicleCancelTaskRequest {
 }
 
 message VehicleCancelTaskResponse {
+}
+
+message VehicleRejectTaskRequest {
+    // The vehicle ID rejecting the task.
+    string vehicle_id = 1;
+
+    // The task ID to cancel.
+    string task_id = 2;
+
+    // A reason for cancellation.
+    RejectReason reject_reason = 3;
+}
+
+message VehicleRejectTaskResponse {
 }
 
 message GetVehicleInfoRequest {
@@ -204,6 +217,11 @@ service DispatchVehicleService {
     // when the vehicle attempts to make the pickup.
 
     rpc CancelTask (VehicleCancelTaskRequest) returns (VehicleCancelTaskResponse);
+
+    // Reject an existing task, as a vehicle.
+    //
+    // A vehicle (rather than a passenger) may need to reject a task if they for some reason don't want to make the trip
+    rpc RejectTask (VehicleRejectTaskRequest) returns (VehicleRejectTaskResponse);
 
     // Get the VehicleInfo associated with a vehicle.
     //

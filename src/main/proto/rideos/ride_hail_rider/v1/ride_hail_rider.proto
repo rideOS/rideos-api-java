@@ -21,6 +21,7 @@ option java_package = "ai.rideos.api.ride_hail_rider.v1";
 option objc_class_prefix = "RideHailRider";
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
 import "google/api/gapi_annotations.proto";
@@ -281,7 +282,8 @@ message FindPredefinedStopRequest {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["fleetId", "queryPosition"]
-        } };
+        }
+    };
 
     // The fleet identifier to get the predefined stop for.
     string fleet_id = 1;
@@ -305,6 +307,49 @@ message StopSearchParameters {
         // The id of the stop to return. Providing this is a way to obtain a PredefinedStop by its id alone.
         string stop_id = 3;
     }
+}
+
+message ScheduledTrip {
+    ride_hail_rider.v1.RequestTripRequest trip_request = 1;
+    SchedulingMethod scheduling_method = 2;
+}
+
+message SchedulingMethod {
+    oneof method {
+        google.protobuf.Timestamp pickup_time = 2;
+    }
+}
+
+message ScheduleTripRequest {
+    ScheduledTrip scheduled_trip = 1;
+}
+
+message ScheduleTripResponse {
+}
+
+message CancelScheduledTripRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["tripId"]
+        }
+    };
+    string trip_id = 1;
+}
+
+message CancelScheduledTripResponse {
+}
+
+message GetScheduledTripsRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["riderId"]
+        }
+    };
+    string rider_id = 1;
+}
+
+message GetScheduledTripsResponse {
+    repeated ScheduledTrip scheduled_trips = 1;
 }
 
 //////////// DEPRECATED REQUEST/RESPONSE MESSAGES BELOW ////////////
@@ -556,6 +601,45 @@ service RideHailRiderService {
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
             tags: "RideHail Rider API (v1)"
+        };
+    }
+
+    // Schedule a future trip
+    //
+    // Schedules a trip to be requested dynamically in the future.
+    rpc ScheduleTrip (ScheduleTripRequest) returns (ScheduleTripResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/ScheduleTrip"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1 - Experimental)"
+        };
+    }
+
+    // Cancel a scheduled trip
+    //
+    // Cancel a trip that has been scheduled to be requested in the future.
+    rpc CancelScheduledTrip (CancelScheduledTripRequest) returns (CancelScheduledTripResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/CancelScheduledTrip"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1 - Experimental)"
+        };
+    }
+
+    // Get a rider's scheduled trips
+    //
+    // Cancel a trip that has been scheduled to be requested in the future.
+    rpc GetScheduledTrips (GetScheduledTripsRequest) returns (GetScheduledTripsResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/rider/v1/GetScheduledTrips"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Rider API (v1 - Experimental)"
         };
     }
 

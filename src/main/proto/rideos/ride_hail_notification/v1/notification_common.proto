@@ -21,11 +21,15 @@ option java_package = "ai.rideos.api.ride_hail_notification.v1";
 option objc_class_prefix = "RideHailNotification";
 
 message DeviceInfo {
-    enum OsType {
-        UNKNOWN = 0;
-        ANDROID = 1;
-        IOS = 2;
+    oneof device_type {
+        AndroidDevice android_device = 1;
+        IosDevice ios_device = 2;
     }
-    string device_id = 1;
-    OsType os_type = 2;
+    message AndroidDevice {
+        string token = 1;
+    }
+    message IosDevice {
+        bytes token = 1;
+        string bundle_id = 2;
+    }
 }

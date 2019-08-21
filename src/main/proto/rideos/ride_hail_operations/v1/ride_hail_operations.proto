@@ -26,6 +26,7 @@ import "google/api/gapi_annotations.proto";
 import "grpc/gateway/protoc-gen-swagger/options/swagger_annotations.proto";
 
 import "rideos/commons/ride_hail_commons.proto";
+import "rideos/ride_hail_rider/v1/ride_hail_rider.proto";
 
 option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
     info: {
@@ -116,7 +117,8 @@ message GetTripsRequest {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["fleet_id"]
-        } };
+        }
+    };
 
     // Client-provided identifier of the fleet that contains the trips
     string fleet_id = 1;
@@ -131,6 +133,18 @@ message GetTripsRequest {
 message GetTripsResponse {
     // A list of all trips active in the given time window and fleet
     repeated ride_hail_commons.Trip trip = 1;
+}
+
+message GetScheduledTripsRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["fleetId"]
+        } };
+    string fleet_id = 1;
+}
+
+message GetScheduledTripsResponse {
+    repeated ride_hail_rider.v1.ScheduledTrip scheduled_trips = 1;
 }
 
 //////////// DEPRECATED REQUEST/RESPONSE MESSAGES BELOW ////////////
@@ -272,6 +286,19 @@ service RideHailOperationsService {
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
             tags: "RideHail Operations API (v1)"
+        };
+    }
+
+    // Retrieve scheduled trips
+    //
+    // Returns all trips scheduled by an operator to be requested in the future for a given fleet.
+    rpc GetScheduledTrips (GetScheduledTripsRequest) returns (GetScheduledTripsResponse) {
+        option (google.api.http) = {
+            post: "/ridehail/operations/v1/GetScheduledTrips"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
         };
     }
 

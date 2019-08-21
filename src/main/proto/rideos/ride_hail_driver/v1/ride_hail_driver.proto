@@ -231,11 +231,29 @@ message CancelTripRequest {
 
     // Identifier of the trip to cancel.
     string id = 1;
-    // Optional description outlinining the reason for canceling the trip.
+    // Optional description outlining the reason for cancelling the trip.
     string description = 2;
 }
 
 message CancelTripResponse {
+}
+
+message RejectTripRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["tripId", "vehicleId"]
+        }
+    };
+
+    // Identifier of the trip to cancel.
+    string trip_id = 1;
+    // Identifier of the vehicle that cancelled.
+    string vehicle_id = 2;
+    // Optional description outlining the reason for rejecting the trip.
+    string description = 3;
+}
+
+message RejectTripResponse {
 }
 
 message GetTripInfoRequest {
@@ -439,6 +457,20 @@ service RideHailDriverService {
     rpc CancelTrip (CancelTripRequest) returns (CancelTripResponse) {
         option (google.api.http) = {
             post: "/ride-hail-driver/v1/CancelTrip"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1)"
+        };
+    }
+
+    // Reject a trip
+    //
+    // Unassign the trip from the rejecting vehicle. The trip will be reassigned automatically, but never to the
+    // vehicle that rejected it.
+    rpc RejectTrip (RejectTripRequest) returns (RejectTripResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-driver/v1/RejectTrip"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {

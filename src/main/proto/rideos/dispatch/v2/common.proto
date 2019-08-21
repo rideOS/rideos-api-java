@@ -136,6 +136,10 @@ message CancelReason {
     string description = 2;
 }
 
+message RejectReason {
+    string description = 1;
+}
+
 message FleetMetadata {
     string fleet_id = 1;
     map<string, string> properties = 2;
