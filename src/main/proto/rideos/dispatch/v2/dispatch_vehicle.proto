@@ -109,7 +109,8 @@ message MarkVehicleStaleResponse {
 }
 
 message VehicleCancelTaskRequest {
-    string vehicle_id = 1 [deprecated = true]; // this is unused
+    // The vehicle ID rejecting the task.
+    string vehicle_id = 1;
 
     // The task ID to cancel.
     string task_id = 2;
