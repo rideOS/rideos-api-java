@@ -609,7 +609,7 @@ service RideHailRiderService {
     // Schedules a trip to be requested dynamically in the future.
     rpc ScheduleTrip (ScheduleTripRequest) returns (ScheduleTripResponse) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/ScheduleTrip"
+            post: "/ride-hail-rider/v1/ScheduleTrip"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -622,7 +622,7 @@ service RideHailRiderService {
     // Cancel a trip that has been scheduled to be requested in the future.
     rpc CancelScheduledTrip (CancelScheduledTripRequest) returns (CancelScheduledTripResponse) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/CancelScheduledTrip"
+            post: "/ride-hail-rider/v1/CancelScheduledTrip"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -635,7 +635,7 @@ service RideHailRiderService {
     // Cancel a trip that has been scheduled to be requested in the future.
     rpc GetScheduledTrips (GetScheduledTripsRequest) returns (GetScheduledTripsResponse) {
         option (google.api.http) = {
-            post: "/ridehail/rider/v1/GetScheduledTrips"
+            post: "/ride-hail-rider/v1/GetScheduledTrips"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
