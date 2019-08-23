@@ -23,7 +23,7 @@ option objc_class_prefix = "RideHailNotification";
 import "rideos/ride_hail_notification/v1/notification_common.proto";
 
 message SetRiderDeviceInfoRequest {
-    string trip_id = 1;
+    string rider_id = 1;
     DeviceInfo device_info = 2;
 }
 
