@@ -140,6 +140,14 @@ message VehicleState {
             double travel_time_in_seconds = 2;
             // Distance of the route leg in meters.
             double distance_in_meters = 3;
+            // The source that generated the route leg
+            Source source = 4;
+            enum Source {
+                // Provided by the vehicle
+                VEHICLE = 0;
+                // Default route provided by the rideOS routing API
+                RIDEOS_DEFAULT = 1;
+            }
         }
 
         // Vehicle is driving to a location 
@@ -194,7 +202,7 @@ message DriverInfo {
 message Trip {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
-            required: ["id", "fleed_id", "definition", "info", "state"]
+            required: ["id", "fleetId", "definition", "info", "state", "creationTime"]
         }
     };
 
@@ -208,6 +216,8 @@ message Trip {
     TripInfo info = 4;
     // State of the trip, containing information specific to each state, for example the assigned vehicle or cancelation reason.
     TripState state = 5;
+    google.protobuf.Timestamp creation_time = 6;
+    google.protobuf.Timestamp termination_time = 7;
 }
 
 // Immutable properties of a trip
@@ -267,6 +277,9 @@ message TripState {
         // State information for a trip that has been replaced by another trip (e.g. due to changes to the trip definition)
         Replaced replaced = 7;
     }
+
+    // When the task was last assigned to a vehicle.
+    google.protobuf.Timestamp last_assigned_timestamp = 8;
 
     // Waiting to be assigned to a vehicle in the fleet.
     message WaitingForAssignment {

@@ -41,15 +41,30 @@ message Notification {
 
 message Event {
     oneof event_type {
+        RiderEvent rider_event = 1;
+        DriverEvent driver_event = 2;
+    }
+
+    message RiderEvent {
         VehicleMatchedToPassenger vehicle_matched_to_passenger = 1;
         VehicleArrivedAtPickup vehicle_arrived_at_pickup = 2;
+
+        message VehicleMatchedToPassenger {
+            ride_hail_commons.VehicleInfo info = 1;
+            google.protobuf.Timestamp estimated_pickup_time = 2;
+        }
+
+        message VehicleArrivedAtPickup {
+            ride_hail_commons.VehicleInfo info = 1;
+        }
     }
-    message VehicleMatchedToPassenger {
-        ride_hail_commons.VehicleInfo info = 1;
-        google.protobuf.Timestamp estimated_pickup_time = 2;
-    }
-    message VehicleArrivedAtPickup {
-        ride_hail_commons.VehicleInfo info = 1;
+
+    message DriverEvent {
+        NewTripAssignment new_trip_assignment = 1;
+
+        message NewTripAssignment {
+            ride_hail_commons.TripInfo trip_info = 1;
+        }
     }
 }
 

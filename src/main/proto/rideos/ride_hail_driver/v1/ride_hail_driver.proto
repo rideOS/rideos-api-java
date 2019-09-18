@@ -28,7 +28,6 @@ import "grpc/gateway/protoc-gen-swagger/options/swagger_annotations.proto";
 
 import "rideos/geo/v1/geo.proto";
 import "rideos/commons/ride_hail_commons.proto";
-import "rideos/route/v1/route.proto";
 
 option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
     info: {
@@ -316,46 +315,6 @@ message SetReadinessRequest {
     NotReadyForDispatchTaskAction not_ready_action = 3;
 }
 
-message SetReadinessResponse {
-}
-
-message SyncVehicleStateRequest {
-    string vehicle_id = 1;
-    geo.v1.PositionAndHeading vehicle_pose = 2;
-
-    // Response will report the status of all of these task IDs
-    repeated string existing_task_id = 3;
-
-    // Optional. Set to true to request that the route be recalculated immediately.
-    bool refresh_route = 4;
-}
-
-message SyncVehicleStateResponse {
-    ride_hail_commons.DeprecatedPlan plan = 1;
-    route.v1.RouteResponse route_to_first_waypoint = 2 [deprecated = true];
-    map<string, ride_hail_commons.TaskStage> existing_task_stage = 3 [deprecated = true];
-    ride_hail_commons.VehicleRouteLeg route_leg_to_first_waypoint = 4;
-    map<string, ride_hail_commons.DeprecatedTrip.TripStage> existing_trip_stage = 5;
-}
-
-message SetVehicleRouteRequest {
-    string vehicle_id = 1;
-    string step_id = 2;
-    route.v1.RouteResponse route_response = 3 [deprecated = true];
-}
-
-message SetVehicleRouteResponse {
-}
-
-message SetVehicleRouteLegsRequest {
-    string vehicle_id = 1;
-    map<string, ride_hail_commons.VehicleRouteLeg> vehicle_route_legs = 2;
-}
-
-message SetVehicleRouteLegsResponse {
-
-}
-
 message SetVehicleInfoRequest {
     ride_hail_commons.DeprecatedVehicleInfo vehicle_info = 1;
 }
@@ -474,7 +433,7 @@ service RideHailDriverService {
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-            tags: "RideHail Driver API (v1)"
+            tags: "RideHail Driver API (v1 - Experimental)"
         };
     }
 
@@ -496,26 +455,6 @@ service RideHailDriverService {
 
     // Have the Vehicle associate with a fleet
     rpc JoinFleet (JoinFleetRequest) returns (JoinFleetResponse) {
-        option deprecated = true;
-    }
-
-    // Have the Vehicle associate with a fleet
-    rpc SetReadiness (SetReadinessRequest) returns (SetReadinessResponse) {
-        option deprecated = true;
-    }
-
-    // Sync the VehicleState
-    rpc SyncVehicleState (SyncVehicleStateRequest) returns (SyncVehicleStateResponse) {
-        option deprecated = true;
-    }
-
-    // Set the Vehicle Route
-    rpc SetVehicleRoute (SetVehicleRouteRequest) returns (SetVehicleRouteResponse) {
-        option deprecated = true;
-    };
-
-    // Set the Vehicle Route Legs
-    rpc SetVehicleRouteLegs (SetVehicleRouteLegsRequest) returns (SetVehicleRouteLegsResponse) {
         option deprecated = true;
     }
 
