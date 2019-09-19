@@ -135,6 +135,19 @@ message Vehicle {
     // Restrict any task insertions or swaps up to this number leg in the plan. For example, passing a value of 2
     // for this field will restrict any insertions happening in the first two legs of the plan.
     uint32 restrict_task_insertions_up_to = 6;
+
+    RoutingConstraints routing_constraints = 7;
+
+    message RoutingConstraints {
+        // Optional: the returned plan will not require the vehicle to traverse these blacklist constraints. Blacklist
+        // constraints take precedence over whitelist constraints if both are specified.
+        repeated string blacklist_constraint_id = 1;
+
+        // Optional: if provided, this list of identifiers defines a whitelist. The whitelist consists of the union of all
+        // constraints listed. The returned plan will not require the vehicle to leave this whitelist. Blacklist constraints
+        // take precedence over whitelist constraints if both are specified.
+        repeated string whitelist_constraint_id = 2;
+    }
 }
 
 // Recommendation for a vehicle

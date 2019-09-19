@@ -315,6 +315,9 @@ message SetReadinessRequest {
     NotReadyForDispatchTaskAction not_ready_action = 3;
 }
 
+message SetReadinessResponse {
+}
+
 message SetVehicleInfoRequest {
     ride_hail_commons.DeprecatedVehicleInfo vehicle_info = 1;
 }
@@ -455,6 +458,11 @@ service RideHailDriverService {
 
     // Have the Vehicle associate with a fleet
     rpc JoinFleet (JoinFleetRequest) returns (JoinFleetResponse) {
+        option deprecated = true;
+    }
+
+    // Have the Vehicle associate with a fleet
+    rpc SetReadiness (SetReadinessRequest) returns (SetReadinessResponse) {
         option deprecated = true;
     }
 
