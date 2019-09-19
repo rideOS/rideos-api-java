@@ -109,19 +109,7 @@ message CancelTaskRequest {
     string requested_task_id = 2;
 }
 
-message UpdatePickupDropoffTaskRequest {
-    string task_id = 1;
-
-    TaskLocation new_pickup_location = 4;
-
-    TaskLocation new_dropoff_location = 5;
-}
-
 message CancelTaskResponse {
-}
-
-message UpdatePickupDropoffTaskResponse {
-    string new_task_id = 1;
 }
 
 service DispatchTaskService {
@@ -136,11 +124,6 @@ service DispatchTaskService {
     // Use this method to cancel an active task. If the task has already been assigned to a vehicle, it will be
     // unassigned after calling this method.
     rpc CancelTask (CancelTaskRequest) returns (CancelTaskResponse);
-
-    // Update an existing task
-    //
-    // This method will return a new task with a new ID and the original task will terminate with a `REPLACED` status.
-    rpc UpdatePickupDropoffTask (UpdatePickupDropoffTaskRequest) returns (UpdatePickupDropoffTaskResponse);
 
     // Query for the status of the current task by passenger ID
     rpc QueryCurrentTask (QueryCurrentTaskRequest) returns (PassengerTaskInfo);

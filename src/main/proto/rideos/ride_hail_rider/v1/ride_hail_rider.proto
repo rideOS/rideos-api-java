@@ -344,25 +344,6 @@ message TripResponse {
     string requested_task_id = 1;
 }
 
-message UpdateTripRequest {
-    option deprecated = true;
-
-    string task_id = 1;
-
-    // Can update pickup, dropoff, or both
-    ride_hail_commons.TaskLocation new_pickup_location = 4 [deprecated = true];
-    ride_hail_commons.TaskLocation new_dropoff_location = 5 [deprecated = true];
-
-    ride_hail_commons.StopLocation new_pickup = 2;
-    ride_hail_commons.StopLocation new_dropoff = 3;
-}
-
-message UpdateTripResponse {
-    option deprecated = true;
-
-    string new_task_id = 1;
-}
-
 message QueryTripRequest {
     option deprecated = true;
 
@@ -564,11 +545,6 @@ service RideHailRiderService {
 
     // Use RequestTrip instead of this method
     rpc RequestTripRC (RequestTripRequest) returns (RequestTripResponse) {
-        option deprecated = true;
-    }
-
-    // Instead of using this method, use the ChangeTripDefinition endpoint.
-    rpc UpdateTrip (UpdateTripRequest) returns (UpdateTripResponse) {
         option deprecated = true;
     }
 
