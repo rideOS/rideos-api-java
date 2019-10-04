@@ -24,8 +24,9 @@ import "google/protobuf/timestamp.proto";
 
 import "google/api/gapi_annotations.proto";
 import "grpc/gateway/protoc-gen-swagger/options/swagger_annotations.proto";
-
+import "rideos/geo/v1/geo.proto";
 import "rideos/commons/ride_hail_commons.proto";
+import "rideos/ride_hail_rider/v1/ride_hail_rider.proto";
 
 option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
     info: {
@@ -133,17 +134,20 @@ message GetTripsResponse {
     repeated ride_hail_commons.Trip trip = 1;
 }
 
-message RoutingConstraints {
-    repeated string blacklist_constraint_ids = 1;
-    repeated string whitelist_constraint_ids = 2;
-}
-
 message SetVehicleRoutingConstraintsRequest {
     string vehicle_id = 1;
-    RoutingConstraints constraints = 2;
+    ride_hail_commons.RoutingConstraints constraints = 2;
 }
 
 message SetVehicleRoutingConstraintsResponse {
+}
+
+message AddVehicleRoutingConstraintsRequest {
+    string vehicle_id = 1;
+    ride_hail_commons.RoutingConstraints constraints = 2;
+}
+
+message AddVehicleRoutingConstraintsResponse {
 }
 
 message GetVehicleRoutingConstraintsRequest {
@@ -151,31 +155,38 @@ message GetVehicleRoutingConstraintsRequest {
 }
 
 message GetVehicleRoutingConstraintsResponse {
-    RoutingConstraints constraints = 1;
+    ride_hail_commons.RoutingConstraints constraints = 1;
+}
+
+message RemoveVehicleRoutingConstraintsRequest {
+    string vehicle_id = 1;
+    ride_hail_commons.RoutingConstraints constraints = 2;
+}
+
+message RemoveVehicleRoutingConstraintsResponse {
+}
+
+message ClearVehicleRoutingConstraintsRequest {
+    string vehicle_id = 1;
+}
+
+message ClearVehicleRoutingConstraintsResponse {
 }
 
 message SetFleetRoutingConstraintsRequest {
     string fleet_id = 1;
-    RoutingConstraints constraints = 2;
+    ride_hail_commons.RoutingConstraints constraints = 2;
 }
 
 message SetFleetRoutingConstraintsResponse {
 }
 
-message AddWhitelistConstraintToFleetRequest {
+message AddFleetRoutingConstraintsRequest {
     string fleet_id = 1;
-    string whitelist_constraint_id = 2;
+    ride_hail_commons.RoutingConstraints constraints = 2;
 }
 
-message AddWhitelistConstraintToFleetResponse {
-}
-
-message AddBlacklistConstraintToFleetRequest {
-    string fleet_id = 1;
-    string blacklist_constraint_id = 2;
-}
-
-message AddBlacklistConstraintToFleetResponse {
+message AddFleetRoutingConstraintsResponse {
 }
 
 message GetFleetRoutingConstraintsRequest {
@@ -183,7 +194,54 @@ message GetFleetRoutingConstraintsRequest {
 }
 
 message GetFleetRoutingConstraintsResponse {
-    RoutingConstraints constraints = 1;
+    ride_hail_commons.RoutingConstraints constraints = 1;
+}
+
+message RemoveFleetRoutingConstraintsRequest {
+    string fleet_id = 1;
+    ride_hail_commons.RoutingConstraints constraints = 2;
+}
+
+message RemoveFleetRoutingConstraintsResponse {
+}
+
+message ClearFleetRoutingConstraintsRequest {
+    string fleet_id = 1;
+}
+
+message ClearFleetRoutingConstraintsResponse {
+}
+
+message AddTripRequest {
+
+    // Client-provided identifier for the trip. Needs to be unique per partner and can not be reused.
+    string id = 1;
+    // Client-provided identifier for the operator.
+    string requestor_id = 2;
+    // The identifier of the fleet that will serve the trip.
+    string fleet_id = 3;
+
+    // Immutable definition of a trip like location, to change it a new trip needs to be requested.
+    ride_hail_commons.TripDefinition definition = 4;
+    // Options to configure the trip assigment.
+
+    rideos.ride_hail_rider.v1.DispatchParameters dispatch_parameters = 5;
+    // Additional properties for storing partner-specific information about the trip, as string key value pairs.
+    map<string, string> properties = 6;
+
+}
+
+message AddTripResponse {
+}
+
+message CancelTripRequest {
+    // Identifier of the trip to cancel.
+    string id = 1;
+    // Optional description outlining the reason for canceling the trip.
+    string description = 2;
+}
+
+message CancelTripResponse {
 }
 
 //////////// DEPRECATED REQUEST/RESPONSE MESSAGES BELOW ////////////
@@ -253,6 +311,61 @@ message GetActiveVehiclesInFleetRequest {
 message GetActiveVehiclesResponse {
     repeated ride_hail_commons.VehicleUIState vehicles = 1;
     repeated ride_hail_commons.DeprecatedVehicle deprecated_vehicle = 2;
+}
+
+message GetStopRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["stop_id"]
+        }
+    };
+
+    string stop_id = 1;
+}
+
+message GetStopResponse {
+    ride_hail_commons.PredefinedStop stop = 1;
+}
+
+message GetStopsInAreaRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["area"]
+        }
+    };
+
+    geo.v1.Shape area = 1;
+}
+
+message GetStopsInAreaResponse {
+    repeated ride_hail_commons.PredefinedStop stop = 1;
+}
+
+message AddOrReplaceStopRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["stop"]
+        }
+    };
+
+    ride_hail_commons.PredefinedStop stop = 1;
+}
+
+message AddOrReplaceStopResponse {
+
+}
+
+message DeleteStopRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["stop_id"]
+        } };
+
+    string stop_id = 1;
+}
+
+message DeleteStopResponse {
+
 }
 
 service RideHailOperationsService {
@@ -328,7 +441,7 @@ service RideHailOperationsService {
         };
     }
 
-    // Set vehicle-level routing constraints
+    // Set vehicle-level routing constraints. (Experimental)
     //
     // These constraints will be applied to the named vehicle, both during the dispatch process and also
     // when returning routes in the rider and driver APIs.
@@ -342,7 +455,21 @@ service RideHailOperationsService {
         };
     }
 
-    // Get vehicle-level routing constraints
+    // Add whitelist and/or blacklist routing constraints at vehicle-level. (Experimental)
+    //
+    // This constraint will be added and applied to the named vehicle, both during the dispatch process and also
+    // when returning routes in the rider and driver APIs.
+    rpc AddVehicleRoutingConstraints (AddVehicleRoutingConstraintsRequest) returns (AddVehicleRoutingConstraintsResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-operations/v1/AddVehicleRoutingConstraints"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+        };
+    }
+
+    // Get vehicle-level routing constraints. (Experimental)
     rpc GetVehicleRoutingConstraints (GetVehicleRoutingConstraintsRequest) returns (GetVehicleRoutingConstraintsResponse) {
         option (google.api.http) = {
             post: "/ride-hail-operations/v1/GetVehicleRoutingConstraints"
@@ -353,7 +480,29 @@ service RideHailOperationsService {
         };
     }
 
-    // Set fleet-level routing constraints
+    // Remove included whitelist and/or blacklist routing constraints from vehicle. (Experimental)
+    rpc RemoveVehicleRoutingConstraints (RemoveVehicleRoutingConstraintsRequest) returns (RemoveVehicleRoutingConstraintsResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-operations/v1/RemoveVehicleRoutingConstraints"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+        };
+    }
+
+    // Clear all vehicle-level routing constraints. (Experimental)
+    rpc ClearVehicleRoutingConstraints (ClearVehicleRoutingConstraintsRequest) returns (ClearVehicleRoutingConstraintsResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-operations/v1/ClearVehicleRoutingConstraints"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+        };
+    }
+
+    // Set fleet-level routing constraints. (Experimental)
     //
     // These constraints will be applied to the named fleet, both during the dispatch process and also
     // when returning routes in the rider and driver APIs.
@@ -367,13 +516,13 @@ service RideHailOperationsService {
         };
     }
 
-    // Add whitelist routing constraint to fleet
+    // Add whitelist and/or blacklist routing constraints at fleet-level. (Experimental)
     //
     // This constraint will be added and applied to the named fleet, both during the dispatch process and also
     // when returning routes in the rider and driver APIs.
-    rpc AddWhitelistConstraintToFleet (AddWhitelistConstraintToFleetRequest) returns (AddWhitelistConstraintToFleetResponse) {
+    rpc AddFleetRoutingConstraints (AddFleetRoutingConstraintsRequest) returns (AddFleetRoutingConstraintsResponse) {
         option (google.api.http) = {
-            post: "/ride-hail-operations/v1/AddWhitelistConstraintToFleet"
+            post: "/ride-hail-operations/v1/AddFleetRoutingConstraints"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -381,26 +530,106 @@ service RideHailOperationsService {
         };
     }
 
-    // Add blacklist routing constraint to fleet
-    //
-    // This constraint will be added and applied to the named fleet, both during the dispatch process and also
-    // when returning routes in the rider and driver APIs.
-    rpc AddBlacklistConstraintToFleet (AddBlacklistConstraintToFleetRequest) returns (AddBlacklistConstraintToFleetResponse) {
-        option (google.api.http) = {
-            post: "/ride-hail-operations/v1/AddBlacklistConstraintToFleet"
-            body: "*"
-        };
-        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-            tags: "RideHail Operations API (v1 - Experimental)"
-        };
-    }
-
-    // Get fleet-level routing constraints
+    // Get fleet-level routing constraints. (Experimental)
     //
     // The default RoutingConstraints object is used to mean "unconstrained".
     rpc GetFleetRoutingConstraints (GetFleetRoutingConstraintsRequest) returns (GetFleetRoutingConstraintsResponse) {
         option (google.api.http) = {
             post: "/ride-hail-operations/v1/GetFleetRoutingConstraints"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+        };
+    }
+
+    // Remove included whitelist and/or blacklist routing constraints from fleet. (Experimental)
+    rpc RemoveFleetRoutingConstraints (RemoveFleetRoutingConstraintsRequest) returns (RemoveFleetRoutingConstraintsResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-operations/v1/RemoveFleetRoutingConstraints"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+        };
+    }
+
+    // Clear all fleet-level routing constraints. (Experimental)
+    rpc ClearFleetRoutingConstraints (ClearFleetRoutingConstraintsRequest) returns (ClearFleetRoutingConstraintsResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-operations/v1/ClearFleetRoutingConstraints"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+        };
+    }
+
+    // Add a trip (Experimental)
+    //
+    // Creates a new trip for a given vehicle in the `WAITING_FOR_ASSIGNMENT` state.
+    // The operation succeeds if the trip creation was successful and does not wait until a trip is assigned.
+    // Operator dispatched trips take precedence over trips not yet picked up.
+    // Currently, only Relocate trips are supported for trips created from the operator.
+    rpc AddTrip (AddTripRequest) returns (AddTripResponse) {
+        option (google.api.http) = {
+                post: "/ride-hail-operations/v1/AddTrip"
+                body: "*"
+            };
+    }
+
+    // Cancel a trip (Experimental)
+    //
+    // Cancel a trip and gives the option of providing a reason for the cancellation to be propagated to the vehicle,
+    // if it has nonpicked up tasks assigned, and riders, if they they have not been picked up.
+    rpc CancelTrip (CancelTripRequest) returns (CancelTripResponse) {
+        option (google.api.http) = {
+                post: "/ride-hail-operations/v1/CancelTrip"
+                body: "*"
+            };
+    }
+
+    // Get a stop by ID (Experimental)
+    rpc GetStop (GetStopRequest) returns (GetStopResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-operations/v1/GetStop"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+        };
+    }
+
+    // Get all stops within a specified area  (Experimental)
+    rpc GetStopsInArea (GetStopsInAreaRequest) returns (GetStopsInAreaResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-operations/v1/GetStopsInArea"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+        };
+    }
+
+    // Add or replace a stop (Experimental)
+    //
+    // Add the stop if the identifier does not match an existing stop, and otherwise overwrites the existing stop.
+    rpc AddOrReplaceStop (AddOrReplaceStopRequest) returns (AddOrReplaceStopResponse) {
+        option (google.api.http) = {
+                post: "/ride-hail-operations/v1/AddOrReplaceStop"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+        };
+    }
+
+    // Delete a stop  (Experimental)
+    //
+    // For a given identifier, delete the referenced stop.
+    rpc DeleteStop (DeleteStopRequest) returns (DeleteStopResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-operations/v1/DeleteStop"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {

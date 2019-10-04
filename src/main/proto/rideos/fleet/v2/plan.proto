@@ -173,7 +173,7 @@ message AssignedStep {
     // Whether this AssignedStep corresponds to the pickup or dropoff step.
     StepType step_type = 2;
 
-    // The remaining time to start the task in fractions of a second.
+    // The remaining time to start the task in milliseconds.
     double remaining_time = 3;
 
     enum StepType {

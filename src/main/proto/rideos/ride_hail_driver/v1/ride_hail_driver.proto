@@ -80,6 +80,25 @@ message CreateVehicleRequest {
 message CreateVehicleResponse {
 }
 
+message UpdateVehicleRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["id", "fleetId", "updatedVehicleInfo"]
+        }
+    };
+
+    // Client-provided identifier for the vehicle. This value needs to be unique per partner and cannot be reused.
+    string id = 1;
+    // The identifier of the fleet the vehicle will belong to. The fleet must have been created beforehand.
+    string fleet_id = 2;
+    // The fields to update in the vehicle. Any field that is specified will be overwritten by the request.
+    // Any field that is not specified will not be modified.
+    ride_hail_commons.VehicleInfoUpdate updated_vehicle_info = 3;
+}
+
+message UpdateVehicleResponse {
+}
+
 message GetVehicleInfoRequest {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
@@ -325,6 +344,35 @@ message SetVehicleInfoRequest {
 message SetVehicleInfoResponse {
 }
 
+message CalculateRouteRequest {
+    string vehicle_id = 1;
+
+    // Optional. Will calculate constrained routes for all steps in provided state.
+    // If not, will query for current vehicle state.
+    ride_hail_commons.VehicleState state = 2;
+}
+
+message CalculateRouteResponse {
+    message CalculatedRoute {
+        // Trip ID of previous step
+        string from_trip_id = 1;
+        // Trip ID of the step that this route is for.
+        string to_trip_id = 2;
+        // Step ID of previous step
+        string from_step_id = 3;
+        // Step ID of the step that this route is for.
+        string to_step_id = 4;
+
+        // The calculated route.
+        ride_hail_commons.VehicleState.Step.RouteLeg route_leg = 5;
+        // Violated constraints.
+        ride_hail_commons.ViolatedConstraints violated_constraints = 6;
+    }
+
+    // Response will contain one CalculatedRoute for each step of the vehicle's current plan.
+    repeated CalculatedRoute calculated_route = 1;
+}
+
 service RideHailDriverService {
 
     // Create a vehicle
@@ -334,6 +382,19 @@ service RideHailDriverService {
     rpc CreateVehicle (CreateVehicleRequest) returns (CreateVehicleResponse) {
         option (google.api.http) = {
             post: "/ride-hail-driver/v1/CreateVehicle"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1)"
+        };
+    }
+
+    // Update a vehicle
+    //
+    // Updates a vehicle's mutable information
+    rpc UpdateVehicle (UpdateVehicleRequest) returns (UpdateVehicleResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-driver/v1/UpdateVehicle"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -426,7 +487,7 @@ service RideHailDriverService {
         };
     }
 
-    // Reject a trip
+    // Reject a trip. (Experimental)
     //
     // Unassign the trip from the rejecting vehicle. The trip will be reassigned automatically, but never to the
     // vehicle that rejected it.
@@ -453,6 +514,20 @@ service RideHailDriverService {
             tags: "RideHail Driver API (v1)"
         };
     }
+
+    // Calculate a route for the vehicle. (Experimental)
+    //
+    // Returns a rideOS-calculated route for the vehicle to complete its current Plan. This route will take into account
+    // routing constraints that are set for the vehicle and/or its fleet.
+    rpc CalculateRoute (CalculateRouteRequest) returns (CalculateRouteResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-driver/v1/CalculateRoute"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1 - Experimental)"
+        };
+    };
 
     //////////// DEPRECATED METHODS BELOW ////////////
 

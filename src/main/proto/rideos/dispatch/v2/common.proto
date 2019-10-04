@@ -130,6 +130,7 @@ message CancelReason {
         REQUESTOR = 1;
         VEHICLE = 2;
         INTERNAL = 3;
+        OPERATIONS = 4;
     }
 
     CancelSource source = 1;

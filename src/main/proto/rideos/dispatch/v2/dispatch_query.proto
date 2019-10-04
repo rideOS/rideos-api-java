@@ -68,20 +68,6 @@ message GetActiveVehiclesResponse {
     repeated VehicleUIState vehicles = 1;
 }
 
-message GetPreviewVehiclesRequest {
-    string fleet_id = 1;
-
-    // The center of the geographical area where the preview vehicles will be displayed.
-    //
-    // Typically, preview vehicles will be displayed on a map view, in which case this field should be set to the
-    // center coordinate of the map view.
-    geo.v1.Position preview_center = 2;
-}
-
-message GetPreviewVehiclesResponse {
-    repeated VehiclePreview vehicles = 1;
-}
-
 message ActiveTaskInfo {
     PassengerTaskInfo passenger_task_info = 1;
     string passenger_id = 2;
@@ -185,12 +171,6 @@ service DispatchQueryService {
     // not needed or not desired (e.g. for displaying preview vehicles on a map to passengers), see the
     // GetPreviewVehicles method for an alternative.
     rpc GetActiveVehiclesInFleet (GetActiveVehiclesInFleetRequest) returns (GetActiveVehiclesResponse);
-
-    // Preview the available vehicles in a given area and fleet ID.
-    //
-    // This method can be directly called from a mobile app. Call this method (rather than GetActiveVehiclesIn*) if the
-    // vehicles will be displayed to an end-user.
-    rpc GetPreviewVehicles (GetPreviewVehiclesRequest) returns (GetPreviewVehiclesResponse);
 
     // Get all the known fleet IDs.
     //

@@ -28,7 +28,6 @@ import "grpc/gateway/protoc-gen-swagger/options/swagger_annotations.proto";
 
 import "rideos/commons/ride_hail_commons.proto";
 import "rideos/geo/v1/geo.proto";
-import "rideos/route/v1/route.proto";
 
 option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
     info: {
@@ -273,7 +272,7 @@ message VicinityVehicle {
     string id = 1;
     // The position of the vehicle.
     geo.v1.Position position = 2;
-    // The heading of the vehicle
+    // The heading of the vehicle. Measured clockwise from true North - i.e. 0 is true North, 90 is East, 180 is South, 270 is West, etc.
     google.protobuf.FloatValue heading = 3;
 }
 
@@ -342,62 +341,6 @@ message TripResponse {
     option deprecated = true;
 
     string requested_task_id = 1;
-}
-
-message QueryTripRequest {
-    option deprecated = true;
-
-    string passenger_id = 1;
-}
-
-message GetTripStateRequest {
-    option deprecated = true;
-
-    string passenger_id = 1;
-
-    // Response will report the status of all of these task IDs
-    repeated string existing_task_id = 2;
-}
-
-message GetTripStateResponse {
-    option deprecated = true;
-
-    ride_hail_commons.PassengerTripInfo current_trip_info = 1 [deprecated = true];
-
-    geo.v1.PositionAndHeading assigned_vehicle_pose = 2;
-
-    // The partial plan and route include the waypoints that must be completed before and up to the requestor's
-    // next step
-    ride_hail_commons.DeprecatedPlan assigned_vehicle_partial_plan = 3;
-    route.v1.RouteResponse assigned_vehicle_partial_route = 4 [deprecated = true];
-
-    map<string, ride_hail_commons.PassengerTripInfo> existing_trip_state = 5 [deprecated = true];
-    repeated ride_hail_commons.VehicleRouteLeg assigned_vehicle_route_legs = 6;
-
-    ride_hail_commons.DeprecatedTrip current_trip = 7;
-    map<string, ride_hail_commons.DeprecatedTrip> existing_trip = 8;
-
-    ride_hail_commons.ContactInfo assigned_vehicle_contact_info = 9;
-}
-
-message GetPreviewVehiclesRequest {
-    option deprecated = true;
-
-    string fleet_id = 1;
-
-    // The center of the geographical area where the preview vehicles will be displayed.
-    //
-    // Typically, preview vehicles will be displayed on a map view, in which case this field should be set to the
-    // center coordinate of the map view.
-    geo.v1.Position preview_center = 2;
-}
-
-message GetPreviewVehiclesResponse {
-    option deprecated = true;
-
-    // The vehicles returned in this response will have fabricated identifiers and their position and headings do not
-    // necessarily correspond to real vehicles.
-    repeated ride_hail_commons.VehiclePreview vehicles = 1;
 }
 
 message GetBestPudolRequest {
@@ -547,24 +490,6 @@ service RideHailRiderService {
     rpc RequestTripRC (RequestTripRequest) returns (RequestTripResponse) {
         option deprecated = true;
     }
-
-    // Query for the status of the current trip by passenger identifier
-    rpc QueryTrip (QueryTripRequest) returns (ride_hail_commons.PassengerTripInfo) {
-        option deprecated = true;
-    };
-
-    // Get the trip state
-    rpc GetTripState (GetTripStateRequest) returns (GetTripStateResponse) {
-        option deprecated = true;
-    }
-
-    // Preview the vehicles in a given area and fleet ID.
-    //
-    // This RPC can be directly called from a mobile app. Call this RPC if the vehicles will be displayed to an
-    // end-user.
-    rpc GetPreviewVehicles (GetPreviewVehiclesRequest) returns (GetPreviewVehiclesResponse) {
-        option deprecated = true;
-    };
 
     // Get the PUDOL for a rider
     rpc GetBestPudol (GetBestPudolRequest) returns (GetBestPudolResponse) {

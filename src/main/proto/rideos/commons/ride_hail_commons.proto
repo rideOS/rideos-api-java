@@ -56,6 +56,20 @@ message Stop {
 message PredefinedStop {
     string id = 1;
     geo.v1.Position position = 2;
+    map<string, string> properties = 3;
+}
+
+message ViolatedConstraints {
+    // Any blacklist constraint IDs that were violated by the route.
+    repeated string violated_blacklist_constraint_ids = 1;
+
+    // If true, violates all whitelist constraints
+    bool violated_whitelist = 2;
+}
+
+message RoutingConstraints {
+    repeated string blacklist_constraint_ids = 1;
+    repeated string whitelist_constraint_ids = 2;
 }
 
 //////////// FLEET ////////////
@@ -190,6 +204,16 @@ message VehicleInfo {
     string license_plate = 3;
 }
 
+message VehicleInfoUpdate {
+    google.protobuf.StringValue license_plate = 1;
+    DriverInfo driver_info = 2;
+    PropertyUpdate properties = 3;
+}
+
+message PropertyUpdate {
+    map<string, string> properties = 1;
+}
+
 // Information about the driver, if applicable
 message DriverInfo {
     // Information for contacting the driver.
@@ -225,7 +249,29 @@ message TripDefinition {
     oneof trip_type {
         // Transport a rider from a pickup location to a drop-off location.
         PickupDropoff pickup_dropoff = 1;
+        // Relocate a vehicle to a specific location.
+        Relocate relocate = 2;
     }
+}
+
+// Trip that drives to a different location
+message Relocate {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["stop", "reason", "description"]
+        }
+    };
+
+    Stop stop = 1;
+    RelocateReason reason = 2;
+    enum RelocateReason {
+        UNKNOWN = 0;
+        REFUEL = 1;
+        REPAIR = 2;
+        CUSTOM = 3;
+    }
+    // Description outlining the reason for the relocation trip.
+    string description = 3;
 }
 
 // Trip that transports one or more rider from a pickup to a drop-off
