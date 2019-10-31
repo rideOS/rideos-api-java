@@ -569,8 +569,8 @@ service RideHailOperationsService {
     //
     // Creates a new trip for a given vehicle in the `WAITING_FOR_ASSIGNMENT` state.
     // The operation succeeds if the trip creation was successful and does not wait until a trip is assigned.
-    // Operator dispatched trips take precedence over trips not yet picked up.
     // Currently, only Relocate trips are supported for trips created from the operator.
+    // NOTE: Vehicle cannot be accepting trips when operational trip is dispatched.
     rpc AddTrip (AddTripRequest) returns (AddTripResponse) {
         option (google.api.http) = {
                 post: "/ride-hail-operations/v1/AddTrip"
