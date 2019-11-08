@@ -21,10 +21,12 @@ option java_package = "ai.rideos.api.ride_hail_operations.v1";
 option objc_class_prefix = "RideHailOperations";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
 
 import "google/api/gapi_annotations.proto";
 import "grpc/gateway/protoc-gen-swagger/options/swagger_annotations.proto";
-import "rideos/geo/v1/geo.proto";
+import "rideos/dispatch/v3/dispatch_stop.proto";
+import "rideos/dispatch/v3/common.proto";
 import "rideos/commons/ride_hail_commons.proto";
 import "rideos/ride_hail_rider/v1/ride_hail_rider.proto";
 
@@ -222,6 +224,7 @@ message AddTripRequest {
     string fleet_id = 3;
 
     // Immutable definition of a trip like location, to change it a new trip needs to be requested.
+    // The trip_definition for an operation trip must include exactly one vehicle in its vehicle filter.
     ride_hail_commons.TripDefinition definition = 4;
     // Options to configure the trip assigment.
 
@@ -324,35 +327,43 @@ message GetStopRequest {
 }
 
 message GetStopResponse {
-    ride_hail_commons.PredefinedStop stop = 1;
+    dispatch.v3.Stop stop = 1;
 }
 
-message GetStopsInAreaRequest {
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
-        json_schema: {
-            required: ["area"]
-        }
-    };
-
-    geo.v1.Shape area = 1;
+message GetAllStopsRequest {
 }
 
-message GetStopsInAreaResponse {
-    repeated ride_hail_commons.PredefinedStop stop = 1;
+message GetAllStopsResponse {
+    map<string, dispatch.v3.Stop> stops = 1;
 }
 
-message AddOrReplaceStopRequest {
+
+message CreateStopRequest {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["stop"]
         }
     };
-
-    ride_hail_commons.PredefinedStop stop = 1;
+    string stop_id = 1;
+    dispatch.v3.Stop stop = 2;
 }
 
-message AddOrReplaceStopResponse {
+message CreateStopResponse {
+}
 
+message UpdateStopRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["stop_id"]
+        }
+    };
+
+    string stop_id = 1;
+    google.protobuf.StringValue updated_display_name = 2;
+    dispatch.v3.Metadata updated_metadata = 3;
+}
+
+message UpdateStopResponse {
 }
 
 message DeleteStopRequest {
@@ -365,7 +376,20 @@ message DeleteStopRequest {
 }
 
 message DeleteStopResponse {
+}
 
+message UpdateAcceptingRidesRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["vehicle_id", "updated_accepting_rides"]
+        } };
+    string vehicle_id = 1;
+
+    // Update vehicle's ability to accept new passenger trips
+    ride_hail_commons.AcceptingRides updated_accepting_rides = 2;
+}
+
+message UpdateAcceptingRidesResponse {
 }
 
 service RideHailOperationsService {
@@ -569,8 +593,8 @@ service RideHailOperationsService {
     //
     // Creates a new trip for a given vehicle in the `WAITING_FOR_ASSIGNMENT` state.
     // The operation succeeds if the trip creation was successful and does not wait until a trip is assigned.
+    // Operator dispatched trips take precedence over trips not yet picked up.
     // Currently, only Relocate trips are supported for trips created from the operator.
-    // NOTE: Vehicle cannot be accepting trips when operational trip is dispatched.
     rpc AddTrip (AddTripRequest) returns (AddTripResponse) {
         option (google.api.http) = {
                 post: "/ride-hail-operations/v1/AddTrip"
@@ -600,10 +624,10 @@ service RideHailOperationsService {
         };
     }
 
-    // Get all stops within a specified area  (Experimental)
-    rpc GetStopsInArea (GetStopsInAreaRequest) returns (GetStopsInAreaResponse) {
+    // Get all stops (Experimental)
+    rpc GetAllStops (GetAllStopsRequest) returns (GetAllStopsResponse) {
         option (google.api.http) = {
-            post: "/ride-hail-operations/v1/GetStopsInArea"
+            post: "/ride-hail-operations/v1/GetAllStops"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -611,12 +635,25 @@ service RideHailOperationsService {
         };
     }
 
-    // Add or replace a stop (Experimental)
+    // Create Stop (Experimental)
     //
-    // Add the stop if the identifier does not match an existing stop, and otherwise overwrites the existing stop.
-    rpc AddOrReplaceStop (AddOrReplaceStopRequest) returns (AddOrReplaceStopResponse) {
+    // Create the stop if the identifier does not match an existing stop.
+    rpc CreateStop (CreateStopRequest) returns (CreateStopResponse) {
         option (google.api.http) = {
-                post: "/ride-hail-operations/v1/AddOrReplaceStop"
+            post: "/ride-hail-operations/v1/CreateStop"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+        };
+    }
+
+    // Update Stop (Experimental)
+    //
+    // Update an existing stop. It is not possible to update the position of a stop after it has been created.
+    rpc UpdateStop (UpdateStopRequest) returns (UpdateStopResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-operations/v1/UpdateStop"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
@@ -630,6 +667,16 @@ service RideHailOperationsService {
     rpc DeleteStop (DeleteStopRequest) returns (DeleteStopResponse) {
         option (google.api.http) = {
             post: "/ride-hail-operations/v1/DeleteStop"
+        };
+    }
+
+    // Update a vehicle's ride acceptance state (Experimental)
+    //
+    // Update vehicle's ability to accept new rides (i.e. whether upcoming passenger trips can be assigned to this vehicle)
+    // Note when updated to not accepting rides, all existing rides will be kept on the vehicle's plan.
+    rpc UpdateAcceptingRides (UpdateAcceptingRidesRequest) returns (UpdateAcceptingRidesResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-operations/v1/UpdateAcceptingRides"
             body: "*"
         };
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {

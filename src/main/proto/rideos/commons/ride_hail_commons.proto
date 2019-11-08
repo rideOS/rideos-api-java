@@ -120,6 +120,13 @@ message VehicleState {
     // Indicates that the vehicle is ready to receive new trip assignments.
     bool readiness = 5;
 
+    // Whether a given vehicle is reachable.
+    // Currently, a vehicle will be reachable if it has been active in the last 5 minutes.
+    // Currently, a vehicle's last active time is updated when:
+    // (1) a driver creates a vehicle
+    // (2) a driver updates vehicle state with vehicle set to ready, whether readiness was changed or not.
+    bool is_reachable = 6;
+
     // Plan for completing all assigned trips
     message Plan {
         // Series of steps to complete all assigned trips, e.g. picking up several passengers and dropping them off.
@@ -218,6 +225,13 @@ message PropertyUpdate {
 message DriverInfo {
     // Information for contacting the driver.
     ContactInfo contact_info = 1;
+}
+
+message AcceptingRides {
+    // Whether upcoming passenger trips can be assigned to this vehicle.
+    bool is_accepting_rides = 1;
+    // Optional: Description outlining reason for vehicle's ride acceptance state.
+    string description = 2;
 }
 
 //////////// TRIP ////////////

@@ -195,6 +195,8 @@ message UpdateVehicleStateRequest {
         geo.v1.Position updated_position = 1;
         // Current heading of the vehicle
         google.protobuf.FloatValue updated_heading = 2;
+        // Timestamp at which the position was recorded. Used to improve analytics and metrics.
+        google.protobuf.Timestamp recorded_at = 3;
     }
 
     message OverrideRouteLegs {
@@ -278,7 +280,8 @@ message GetTripInfoRequest {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["id"]
-        } };
+        }
+    };
 
     // Identifier of the trip to get information for.
     string id = 1;
@@ -287,6 +290,14 @@ message GetTripInfoRequest {
 message GetTripInfoResponse {
     // Information about the specified trip, such as rider contact information and additional properties.
     ride_hail_commons.TripInfo info = 1;
+}
+
+message GetTripStatesRequest {
+    repeated string ids = 1;
+}
+
+message GetTripStatesResponse {
+    map<string, ride_hail_commons.TripState> trip_states = 1;
 }
 
 //////////// DEPRECATED REQUEST/RESPONSE MESSAGES BELOW ////////////
@@ -373,6 +384,20 @@ message CalculateRouteResponse {
     repeated CalculatedRoute calculated_route = 1;
 }
 
+message UpdateAcceptingRidesRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["vehicle_id", "updated_accepting_rides"]
+        } };
+    string vehicle_id = 1;
+
+    // Update vehicle's ability to accept new passenger trips
+    ride_hail_commons.AcceptingRides updated_accepting_rides = 2;
+}
+
+message UpdateAcceptingRidesResponse {
+}
+
 service RideHailDriverService {
 
     // Create a vehicle
@@ -434,7 +459,8 @@ service RideHailDriverService {
     // Updates the current state of the vehicle. This update can encapsulate one of the following:
     //
     // 1) Set the vehicle to a ready state (meaning new trips can be assigned to it)
-    // 2) Set the vehicle to a not ready state (meaning new trips will not be assigned to it)
+    // 2) Set the vehicle to a not ready state (meaning new trips will not be assigned to it).
+    // Note when updated to not ready, existing trips will be canceled from vehicle's plan.
     // 3) Set vehicle route legs in the vehicle plan
     // 4) Update the vehicle's position and optionally its heading
     rpc UpdateVehicleState (UpdateVehicleStateRequest) returns (UpdateVehicleStateResponse) {
@@ -449,7 +475,7 @@ service RideHailDriverService {
 
     // Remove a vehicle
     //
-    // Removes a vehicle with the provided identifier. A vehicle cannot be removed if it is assigned a trip.
+    // Removes a vehicle and associated vehicle state with the provided identifier. A vehicle cannot be removed if it is assigned a trip.
     rpc RemoveVehicle (RemoveVehicleRequest) returns (RemoveVehicleResponse) {
         option (google.api.http) = {
             post: "/ride-hail-driver/v1/RemoveVehicle"
@@ -515,6 +541,21 @@ service RideHailDriverService {
         };
     }
 
+    // Retrieve the state of one or more trips
+    //
+    // Returns the current state of a trip. Use this operation to get information on trips in the vehicle plan. For
+    // example, if a trip is removed from the vehicle plan, the driver can check if the trip has been cancelled or
+    // just reassigned.
+    rpc GetTripStates (GetTripStatesRequest) returns (GetTripStatesResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-driver/v1/GetTripStates"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1)"
+        };
+    }
+
     // Calculate a route for the vehicle. (Experimental)
     //
     // Returns a rideOS-calculated route for the vehicle to complete its current Plan. This route will take into account
@@ -528,6 +569,20 @@ service RideHailDriverService {
             tags: "RideHail Driver API (v1 - Experimental)"
         };
     };
+
+    // Update a vehicle's ride acceptance state  (Experimental)
+    //
+    // Update vehicle's ability to accept new rides (i.e. whether upcoming passenger trips can be assigned to this vehicle).
+    // Note when updated to not accepting rides, all existing rides will be kept on the vehicle's plan.
+    rpc UpdateAcceptingRides (UpdateAcceptingRidesRequest) returns (UpdateAcceptingRidesResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-driver/v1/UpdateAcceptingRides"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1 - Experimental)"
+        };
+    }
 
     //////////// DEPRECATED METHODS BELOW ////////////
 

@@ -70,6 +70,13 @@ message Event {
             ride_hail_commons.TripInfo trip_info = 1;
         }
     }
+
+    // For use in the event_type oneof
+    reserved 3 to 20;
+
+    string event_id = 21;
+    // Timestamp at which the event will expire
+    google.protobuf.Timestamp expiration_time = 22;
 }
 
 message AckNotificationsRequest {

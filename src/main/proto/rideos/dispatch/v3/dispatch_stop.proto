@@ -1,0 +1,42 @@
+/*
+ * Copyright 2018-2019 rideOS, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package rideos.dispatch.v3;
+option java_package = "ai.rideos.api.dispatch.v3";
+option java_outer_classname = "DispatchStop";
+option objc_class_prefix = "DispatchStop";
+
+import "rideos/geo/v1/geo.proto";
+import "rideos/dispatch/v3/common.proto";
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Stops
+//
+// A Stop is a discrete point at which a vehicle may stop for a pickup, dropoff, etc..
+//
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+message Stop {
+    string display_name = 1;
+    // The position of the Stop
+    geo.v1.Position position = 2;
+    // Optional: partner defined properties that apply to this stop
+    Metadata metadata = 3;
+}
