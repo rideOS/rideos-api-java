@@ -119,7 +119,8 @@ message GetTripsRequest {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["fleet_id"]
-        } };
+        }
+    };
 
     // Client-provided identifier of the fleet that contains the trips
     string fleet_id = 1;
@@ -237,6 +238,14 @@ message AddTripRequest {
 message AddTripResponse {
 }
 
+message UpdateTripRequest {
+    string id = 1;
+    ride_hail_commons.PropertyUpdate property_update = 2;
+}
+
+message UpdateTripResponse {
+}
+
 message CancelTripRequest {
     // Identifier of the trip to cancel.
     string id = 1;
@@ -304,13 +313,6 @@ message GetFleetActiveTripsResponse {
     repeated ride_hail_commons.DeprecatedTrip trip = 2;
 }
 
-message GetActiveVehiclesInFleetRequest {
-    string fleet_id = 1;
-
-    // Maximum number of vehicles to return
-    int32 max_vehicles = 2;
-}
-
 message GetActiveVehiclesResponse {
     repeated ride_hail_commons.VehicleUIState vehicles = 1;
     repeated ride_hail_commons.DeprecatedVehicle deprecated_vehicle = 2;
@@ -370,7 +372,8 @@ message DeleteStopRequest {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["stop_id"]
-        } };
+        }
+    };
 
     string stop_id = 1;
 }
@@ -382,7 +385,8 @@ message UpdateAcceptingRidesRequest {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["vehicle_id", "updated_accepting_rides"]
-        } };
+        }
+    };
     string vehicle_id = 1;
 
     // Update vehicle's ability to accept new passenger trips
@@ -390,6 +394,19 @@ message UpdateAcceptingRidesRequest {
 }
 
 message UpdateAcceptingRidesResponse {
+}
+
+message UnassignTripRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["trip_id", "vehicle_id"]
+        } };
+
+    string trip_id = 1;
+    string vehicle_id = 2;
+}
+
+message UnassignTripResponse {
 }
 
 service RideHailOperationsService {
@@ -463,6 +480,16 @@ service RideHailOperationsService {
         option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
             tags: "RideHail Operations API (v1)"
         };
+    }
+
+    // Update a trip
+    //
+    // Update modifiable information about a trip like its properties.
+    rpc UpdateTrip (UpdateTripRequest) returns (UpdateTripResponse) {
+        option (google.api.http) = {
+                post: "/ride-hail-operations/v1/UpdateTrip"
+                body: "*"
+            };
     }
 
     // Set vehicle-level routing constraints. (Experimental)
@@ -684,6 +711,22 @@ service RideHailOperationsService {
         };
     }
 
+    // Unassign a trip (Experimental)
+    //
+    // The trip will be reassigned to a vehicle to a vehicle that is accepting rides.
+    // If the given vehicle is still accepting rides, the trip may be assigned back to the same vehicle.
+    // Operational trips are unable to be unassigned from a vehicle.
+    rpc UnassignTrip (UnassignTripRequest) returns (UnassignTripResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-operations/v1/UnassignTrip"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+
+        };
+    }
+
     //////////// DEPRECATED METHODS BELOW ////////////
 
     // Get the available vehicles
@@ -703,14 +746,6 @@ service RideHailOperationsService {
 
     // Delete metadata associated with a fleet.
     rpc DeleteFleetMetadata (DeleteFleetMetadataRequest) returns (DeleteFleetMetadataResponse) {
-        option deprecated = true;
-    }
-
-    // Get all "active" tasks in a fleet.
-    //
-    // See the documentation on "Tasks" for more information:
-    // https://github.com/rideOS/examples/blob/master/grpc/docs/dispatch/v2/data_model_guide.md#task-state-transitions.
-    rpc GetFleetActiveTrips (GetFleetActiveTripsRequest) returns (GetFleetActiveTripsResponse) {
         option deprecated = true;
     }
 

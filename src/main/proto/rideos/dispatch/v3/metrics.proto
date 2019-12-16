@@ -1,0 +1,78 @@
+/*
+ * Copyright 2018-2019 rideOS, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package rideos.dispatch.v3;
+option java_package = "ai.rideos.api.dispatch.v3";
+option java_outer_classname = "DispatchMetrics";
+option objc_class_prefix = "DispatchMetrics";
+
+import "google/protobuf/timestamp.proto";
+import "rideos/geo/v1/geo.proto";
+
+message GetTimeSeriesRequest {
+    enum Metric {
+        UNKNOWN_METRIC = 0;
+        VEHICLES_REACHABLE_MINUTES = 1;
+        VEHICLES_ON_TRIP_WITH_PASSENGERS_MINUTES = 2;
+        VEHICLES_ON_TRIP_WITHOUT_PASSENGERS_MINUTES = 3;
+    }
+    string fleet_id = 1;
+    Metric metric = 2;
+
+    // The beginning of the time range (inclusive) from which to return data.
+    google.protobuf.Timestamp from = 3;
+    // The end of the time range (exclusive) from which to return data. The maximum time range is 7 days.
+    google.protobuf.Timestamp to = 4;
+}
+
+message GetTimeSeriesResponse {
+    message Datapoint {
+        google.protobuf.Timestamp timestamp = 1;
+        double value = 2;
+    }
+    repeated Datapoint data = 1;
+}
+
+message GetSpatialDataRequest {
+    enum Metric {
+        UNKNOWN_METRIC = 0;
+        INITIAL_PICKUP_ETA_MS = 1;
+    }
+    string fleet_id = 1;
+    Metric metric = 2;
+
+    // The beginning of the time range (inclusive) from which to return data.
+    google.protobuf.Timestamp from = 3;
+    // The end of the time range (exclusive) from which to return data. The maximum time range is 7 days.
+    google.protobuf.Timestamp to = 4;
+}
+
+message GetSpatialDataResponse {
+    message Datapoint {
+        google.protobuf.Timestamp timestamp = 1;
+        geo.v1.Position position = 2;
+        double value = 3;
+        map<string, string> metadata = 4;
+    }
+    repeated Datapoint data = 1;
+}
+
+service MetricsService {
+    rpc GetTimeSeries (GetTimeSeriesRequest) returns (GetTimeSeriesResponse);
+    rpc GetSpatialData (GetSpatialDataRequest) returns (GetSpatialDataResponse);
+}

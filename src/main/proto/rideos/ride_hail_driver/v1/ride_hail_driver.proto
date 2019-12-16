@@ -302,52 +302,6 @@ message GetTripStatesResponse {
 
 //////////// DEPRECATED REQUEST/RESPONSE MESSAGES BELOW ////////////
 
-message JoinFleetRequest {
-    string vehicle_id = 1;
-
-    string fleet_id = 2;
-
-    // Whether or not the vehicle is ready for task assignments.
-    // See https://github.com/rideOS/examples/blob/master/grpc/docs/dispatch/v2/data_model_guide.md#ready-for-dispatch
-    // for details
-    bool ready_for_dispatch = 3;
-
-    SetReadinessRequest.NotReadyForDispatchTaskAction not_ready_action = 4;
-}
-
-message JoinFleetResponse {
-}
-
-message SetReadinessRequest {
-    enum NotReadyForDispatchTaskAction {
-        DEFAULT = 0;
-
-        // Cancel all assigned tasks
-        CANCEL_ALL = 1;
-
-        // Unassign any tasks that can be unassigned. Cancel all other tasks.
-        UNASSIGN_OR_CANCEL_ALL = 2;
-
-        // Unassign any tasks that can be unassigned. Keep all other tasks.
-        UNASSIGN_OR_KEEP = 3;
-    }
-
-    // The unique vehicle ID.
-    string vehicle_id = 1;
-
-    // Whether or not the vehicle is ready for task assignments.
-    // See https://github.com/rideOS/examples/blob/master/grpc/docs/dispatch/v2/data_model_guide.md#ready-for-dispatch
-    // for details
-    bool ready_for_dispatch = 2;
-
-    // Optional: This field indicates what to do with all assigned tasks when the vehicle transitions to not ready for
-    // dispatch. This action is applied only if "ready_for_dispatch" is false.
-    NotReadyForDispatchTaskAction not_ready_action = 3;
-}
-
-message SetReadinessResponse {
-}
-
 message SetVehicleInfoRequest {
     ride_hail_commons.DeprecatedVehicleInfo vehicle_info = 1;
 }
@@ -388,7 +342,8 @@ message UpdateAcceptingRidesRequest {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["vehicle_id", "updated_accepting_rides"]
-        } };
+        }
+    };
     string vehicle_id = 1;
 
     // Update vehicle's ability to accept new passenger trips
@@ -396,6 +351,37 @@ message UpdateAcceptingRidesRequest {
 }
 
 message UpdateAcceptingRidesResponse {
+}
+
+message GetMapboxDirectionsRequest {
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+        json_schema: {
+            required: ["mapbox_api_key", "origin", "destination"]
+        }
+    };
+
+    // Mapbox API key to be used for any requests to Mapbox
+    string mapbox_api_key = 1;
+
+    // Origin and destination
+    Waypoint origin = 2;
+    Waypoint destination = 3;
+
+    message Waypoint {
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
+            json_schema: {
+                required: ["position"]
+            } };
+
+        // Position of the vehicle at the waypoint.
+        geo.v1.Position position = 1;
+    }
+}
+
+message GetMapboxDirectionsResponse {
+    // The JSON representation of the Mapbox Directions response.
+    // See https://docs.mapbox.com/api/navigation/#response-retrieve-directions for details.
+    string mapbox_directions_response_json = 1;
 }
 
 service RideHailDriverService {
@@ -584,18 +570,21 @@ service RideHailDriverService {
         };
     }
 
+    // Find directions between an origin and a destination
+    //
+    // Returns directions in Mapbox's Directions response format.
+    // See https://docs.mapbox.com/api/navigation/#response-retrieve-directions for details.
+    rpc GetMapboxDirections (GetMapboxDirectionsRequest) returns (GetMapboxDirectionsResponse) {
+        option (google.api.http) = {
+            post: "/ride-hail-driver/v1/GetMapboxDirections"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Driver API (v1 - Experimental)"
+        };
+    }
+
     //////////// DEPRECATED METHODS BELOW ////////////
-
-    // Have the Vehicle associate with a fleet
-    rpc JoinFleet (JoinFleetRequest) returns (JoinFleetResponse) {
-        option deprecated = true;
-    }
-
-    // Have the Vehicle associate with a fleet
-    rpc SetReadiness (SetReadinessRequest) returns (SetReadinessResponse) {
-        option deprecated = true;
-    }
-
     rpc SetVehicleInfo (SetVehicleInfoRequest) returns (SetVehicleInfoResponse) {
         option deprecated = true;
     };

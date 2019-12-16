@@ -80,8 +80,7 @@ message GetPlanRequest {
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["vehicles", "tasks"]
-        }
-    };
+        } };
 
     // Vehicles for which to provide plan recommendations. 
     // Map from vehicle identifier to `Vehicle` object.
@@ -173,7 +172,7 @@ message AssignedStep {
     // Whether this AssignedStep corresponds to the pickup or dropoff step.
     StepType step_type = 2;
 
-    // The remaining time to start the task in milliseconds.
+    // The remaining time to start the task in seconds.
     double remaining_time = 3;
 
     enum StepType {
@@ -218,7 +217,6 @@ message Task {
         // Desired time window within which this step should occur.
         TimeWindow desired_service_time = 4;
 
-
         // If the pickup has not been completed yet, we will assign this task to the desired vehicle id. This is ignored
         // if the pickup has been completed.
         string desired_vehicle_id = 6;
@@ -234,7 +232,6 @@ message Task {
 
         // Desired time window within which this step should occur.
         TimeWindow desired_service_time = 3;
-
     }
 }
 
