@@ -27,7 +27,7 @@ import "rideos/geo/v1/geo.proto";
 message GetTimeSeriesRequest {
     enum Metric {
         UNKNOWN_METRIC = 0;
-        VEHICLES_REACHABLE_MINUTES = 1;
+        VEHICLES_DISPATCHABLE_MINUTES = 1;
         VEHICLES_ON_TRIP_WITH_PASSENGERS_MINUTES = 2;
         VEHICLES_ON_TRIP_WITHOUT_PASSENGERS_MINUTES = 3;
     }
