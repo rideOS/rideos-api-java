@@ -20,6 +20,7 @@ package rideos.fleet.v2;
 option java_package = "ai.rideos.api.fleet.v2";
 option java_outer_classname = "PlanProto";
 
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
