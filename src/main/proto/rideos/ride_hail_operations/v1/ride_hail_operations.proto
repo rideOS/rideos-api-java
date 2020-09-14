@@ -487,9 +487,12 @@ service RideHailOperationsService {
     // Update modifiable information about a trip like its properties.
     rpc UpdateTrip (UpdateTripRequest) returns (UpdateTripResponse) {
         option (google.api.http) = {
-                post: "/ride-hail-operations/v1/UpdateTrip"
-                body: "*"
-            };
+            post: "/ride-hail-operations/v1/UpdateTrip"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1)"
+        };
     }
 
     // Set vehicle-level routing constraints. (Experimental)
@@ -635,9 +638,12 @@ service RideHailOperationsService {
     // if it has nonpicked up tasks assigned, and riders, if they they have not been picked up.
     rpc CancelTrip (CancelTripRequest) returns (CancelTripResponse) {
         option (google.api.http) = {
-                post: "/ride-hail-operations/v1/CancelTrip"
-                body: "*"
-            };
+            post: "/ride-hail-operations/v1/CancelTrip"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+            tags: "RideHail Operations API (v1 - Experimental)"
+        };
     }
 
     // Get a stop by ID (Experimental)
