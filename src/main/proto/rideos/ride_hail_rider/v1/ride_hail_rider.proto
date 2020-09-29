@@ -277,6 +277,8 @@ message VicinityVehicle {
 }
 
 message FindPredefinedStopRequest {
+    option deprecated = true;
+
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_schema) = {
         json_schema: {
             required: ["fleetId", "queryPosition"]
@@ -290,6 +292,8 @@ message FindPredefinedStopRequest {
 }
 
 message FindPredefinedStopResponse {
+    option deprecated = true;
+
     // List of all the predefined stops around the provided location.
     repeated ride_hail_commons.PredefinedStop predefined_stop = 1;
 }
@@ -470,21 +474,14 @@ service RideHailRiderService {
         };
     }
 
-    // Find predefined stops
-    //
-    // Returns a list of stops predefined by the partner. This can be used to make the user select between fixed pickup locations,
-    // for example terminals at an airport, or fixed shuttle stops. The stop identifier can be used when requesting a trip as stop location.
-    rpc FindPredefinedStop (FindPredefinedStopRequest) returns (FindPredefinedStopResponse) {
-        option (google.api.http) = {
-            post: "/ride-hail-rider/v1/FindPredefinedStop"
-            body: "*"
-        };
-        option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-            tags: "RideHail Rider API (v1)"
-        };
-    }
 
     //////////// DEPRECATED METHODS BELOW ////////////
+
+    // Find predefined stops
+    // PRIVATE -- See https://github.com/rideOS/pangea/issues/11467 for a discussion why this was removed.
+    rpc FindPredefinedStop (FindPredefinedStopRequest) returns (FindPredefinedStopResponse) {
+        option deprecated = true;
+    }
 
     // Use RequestTrip instead of this method
     rpc RequestTripRC (RequestTripRequest) returns (RequestTripResponse) {
